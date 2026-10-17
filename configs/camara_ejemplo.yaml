@@ -1,0 +1,82 @@
+# Configuracion de camara de RoadGuard (RF1).
+#
+# Contiene regiones de interes, limites de carril, correspondencias para
+# rectificacion de perspectiva, clases vehiculares y umbrales (seccion 1.3).
+# Los umbrales son parametros configurables y NO constituyen limites legales
+# (seccion 1.1). Las alertas son experimentales y requieren revision humana.
+
+camara:
+  nombre: ejemplo
+  descripcion: Camara fija de ejemplo. Reemplazar por la secuencia real.
+
+# Region de interes: poligono en coordenadas de imagen (px).
+# Acotarla a la zona donde la proyeccion al camino es confiable (riesgos 4.4).
+region_interes:
+  - [0, 0]
+  - [0, 0]
+  - [0, 0]
+  - [0, 0]
+
+# Limites de carril: un poligono por carril, en coordenadas de imagen (px).
+carriles:
+  - indice: 0
+    poligono:
+      - [0, 0]
+      - [0, 0]
+      - [0, 0]
+      - [0, 0]
+  - indice: 1
+    poligono:
+      - [0, 0]
+      - [0, 0]
+      - [0, 0]
+      - [0, 0]
+
+# Correspondencias para rectificacion de perspectiva (RF4).
+# Minimo 4 pares imagen <-> camino. puntos_camino en METROS.
+# Si se dejan vacios, M1 debe desactivar las metricas basadas en distancia
+# y emitir una advertencia explicita (Paso 5).
+homografia:
+  puntos_imagen: []
+  puntos_camino: []
+
+# Clases vehiculares a detectar (RF2).
+clases:
+  - automovil
+  - bus
+  - camion
+  - motocicleta
+
+confianza_min_deteccion: 0.25
+confianza_min_carril: 0.60
+
+# Paso 4: segundos de permanencia estable en el nuevo carril antes de
+# confirmar un cambio completo. Las oscilaciones sobre la linea no cuentan.
+permanencia_cambio_carril: 1.0
+
+# Umbrales de las reglas (RF7-RF11). Valores de la propuesta.
+umbrales:
+  # RF7 - Cercania peligrosa
+  cercania_velocidad_min: 5.0      # m/s
+  cercania_thw_max: 1.5            # s
+  cercania_persistencia: 2.0       # s
+
+  # RF8 - Zigzag
+  zigzag_cambios_min: 2
+  zigzag_ventana: 10.0             # s
+
+  # RF9 - Corte de carril
+  corte_ventana_post_cambio: 2.0   # s
+  corte_thw_max: 1.5               # s
+  corte_ttc_max: 3.0               # s
+
+  # RF10 - Puntaje de riesgo
+  aporte_cercania: 40
+  aporte_zigzag: 35
+  aporte_corte: 50
+  puntaje_maximo: 100
+  vigencia_aporte: 5.0             # s
+
+  # RF11 - Bandas de color
+  banda_verde_max: 29
+  banda_amarillo_max: 59
