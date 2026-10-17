@@ -2,6 +2,8 @@
 ultralytics>=8.0.0
 opencv-python>=4.8.0
 numpy>=1.24.0
+# Asignacion hungara de ByteTrack (M2) y de IDF1 (M6). Ultralytics ya la instala.
+scipy>=1.10.0
 pandas>=2.0.0
 PyYAML>=6.0
 pytest>=7.4.0

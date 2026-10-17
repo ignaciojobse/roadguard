@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
+from roadguard.poligonos import punto_en_poligono
 from roadguard.tipos import CambioCarril, Carril
 
 
@@ -22,7 +23,7 @@ def asignar_carril(
     """
     mejor: tuple[Optional[int], float] = (None, 0.0)
     for carril in carriles:
-        if not _dentro(punto_px, carril.poligono):
+        if not punto_en_poligono(punto_px, carril.poligono):
             continue
         confianza = _confianza(punto_px, carril.poligono)
         if mejor[0] is None or confianza > mejor[1]:
@@ -118,30 +119,6 @@ class DetectorCambioCarril:
 # ---------------------------------------------------------------------------
 # Geometria de poligonos
 # ---------------------------------------------------------------------------
-
-def _dentro(p: tuple[float, float], poligono: list[tuple[float, float]]) -> bool:
-    """Ray casting; los puntos sobre el borde cuentan como dentro."""
-    x, y = p
-    n = len(poligono)
-    dentro = False
-    for i in range(n):
-        x1, y1 = poligono[i]
-        x2, y2 = poligono[(i + 1) % n]
-        if _sobre_segmento(p, (x1, y1), (x2, y2)):
-            return True
-        if (y1 > y) != (y2 > y):
-            x_int = x1 + (y - y1) * (x2 - x1) / (y2 - y1)
-            if x < x_int:
-                dentro = not dentro
-    return dentro
-
-
-def _sobre_segmento(p, a, b, tol: float = 1e-9) -> bool:
-    cruz = (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0])
-    if abs(cruz) > tol * max(1.0, abs(b[0] - a[0]) + abs(b[1] - a[1])):
-        return False
-    return min(a[0], b[0]) - tol <= p[0] <= max(a[0], b[0]) + tol and min(a[1], b[1]) - tol <= p[1] <= max(a[1], b[1]) + tol
-
 
 def _seccion(p: tuple[float, float], poligono, eje: int) -> Optional[tuple[float, float]]:
     """Intervalo del poligono que contiene a p sobre la recta horizontal

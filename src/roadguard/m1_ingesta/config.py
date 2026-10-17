@@ -9,6 +9,7 @@ from typing import Any
 
 import yaml
 
+from roadguard.poligonos import area_poligono
 from roadguard.tipos import Carril, Configuracion, Homografia, Umbrales
 
 # RF2: clases vehiculares que el sistema sabe detectar. El mapeo desde las
@@ -116,13 +117,13 @@ def validar_consistencia(cfg: Configuracion) -> list[str]:
     advertencias: list[str] = []
     if not cfg.homografia.disponible:
         advertencias.append(ADVERTENCIA_SIN_CALIBRACION)
-    if _area(cfg.region_interes) <= 0:
+    if area_poligono(cfg.region_interes) <= 0:
         advertencias.append(
             "La region de interes tiene area nula: ninguna deteccion sera "
             "aceptada. Reemplazarla por la region real de la camara."
         )
     for carril in cfg.carriles:
-        if _area(carril.poligono) <= 0:
+        if area_poligono(carril.poligono) <= 0:
             advertencias.append(
                 f"El carril {carril.indice} tiene area nula: no se asignaran "
                 "vehiculos a ese carril."
@@ -263,17 +264,6 @@ def _umbrales(valor: Any) -> Umbrales:
 # ---------------------------------------------------------------------------
 # Geometria auxiliar
 # ---------------------------------------------------------------------------
-
-def _area(poligono: list[tuple[float, float]]) -> float:
-    """Area absoluta por la formula del zapato."""
-    s = 0.0
-    n = len(poligono)
-    for i in range(n):
-        x1, y1 = poligono[i]
-        x2, y2 = poligono[(i + 1) % n]
-        s += x1 * y2 - x2 * y1
-    return abs(s) / 2.0
-
 
 def _en_posicion_general(puntos: list[tuple[float, float]]) -> bool:
     """True si existen 4 puntos sin 3 colineales (requisito de la homografia)."""
