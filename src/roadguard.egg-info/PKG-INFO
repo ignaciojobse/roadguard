@@ -1,0 +1,5 @@
+Metadata-Version: 2.4
+Name: roadguard
+Version: 0.1.0
+Summary: Prototipo de apoyo para detectar patrones de conduccion potencialmente riesgosa en video de camaras fijas
+Requires-Python: >=3.10

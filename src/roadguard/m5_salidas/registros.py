@@ -143,6 +143,10 @@ def _escritura_atomica(ruta: str, escribir, newline: Optional[str] = None) -> No
     try:
         with os.fdopen(fd, "w", encoding="utf-8", newline=newline) as f:
             escribir(f)
+        # mkstemp crea con 0600; se dejan los permisos normales del usuario
+        mascara = os.umask(0)
+        os.umask(mascara)
+        os.chmod(tmp, 0o666 & ~mascara)
         os.replace(tmp, ruta)
     except BaseException:
         if os.path.exists(tmp):
