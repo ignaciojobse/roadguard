@@ -11,6 +11,7 @@ Uso:
 from __future__ import annotations
 
 import argparse
+import sys
 
 
 def construir_parser() -> argparse.ArgumentParser:
@@ -24,14 +25,32 @@ def construir_parser() -> argparse.ArgumentParser:
     parser.add_argument("--video", required=True, help="Ruta del MP4 de entrada")
     parser.add_argument("--config", required=True, help="Ruta del YAML de camara")
     parser.add_argument("--salida", required=True, help="Directorio de salidas")
+    parser.add_argument("--pesos", default="yolov8n.pt", help="Pesos del detector (YOLOv8n por defecto)")
+    parser.add_argument("--dispositivo", default=None, help="Dispositivo de inferencia: cpu, 0, mps...")
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = construir_parser().parse_args(argv)
+    from roadguard.m1_ingesta.config import ErrorConfiguracion
+    from roadguard.m1_ingesta.video import ErrorVideo
     from roadguard.pipeline import ejecutar
 
-    ejecutar(args.video, args.config, args.salida)
+    try:
+        resumen = ejecutar(
+            args.video, args.config, args.salida, pesos=args.pesos, dispositivo=args.dispositivo
+        )
+    except (ErrorConfiguracion, ErrorVideo) as e:
+        print(f"roadguard: entrada rechazada (Paso 1): {e}", file=sys.stderr)
+        return 2
+
+    for adv in resumen.advertencias:
+        print(f"ADVERTENCIA: {adv}", file=sys.stderr)
+    print(
+        f"{resumen.n_cuadros_procesados} cuadros a {resumen.fps_procesamiento:.1f} FPS; "
+        f"eventos: {resumen.n_eventos}. Salidas en {args.salida}. "
+        "Alertas experimentales: requieren revision humana."
+    )
     return 0
 
 

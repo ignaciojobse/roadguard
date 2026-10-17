@@ -21,6 +21,10 @@ ADVERTENCIA_SIN_CALIBRACION = (
     "no disponibles y se suspenden las reglas de cercania y corte de carril; "
     "deteccion, seguimiento y zigzag se mantienen (Paso 5)."
 )
+# Version breve para el rotulo permanente del video (Paso 5).
+ADVERTENCIA_SIN_CALIBRACION_CORTA = (
+    "SIN CALIBRACION: distancia, THW y TTC no disponibles; cercania y corte suspendidos"
+)
 
 _CLAVES_RAIZ = {
     "camara",
