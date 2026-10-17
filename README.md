@@ -56,11 +56,39 @@ src/roadguard/
   m4_reglas/          MRR  Motor de reglas y riesgo       RF7-RF10
   m5_salidas/         VE   Visualizacion y exportacion    RF11, RF12
   m6_evaluacion/      ED   Evaluacion y diagnostico       RF2-RF12
-tests/                Pruebas unitarias de reglas
+tests/                Pruebas unitarias e integracion (pytest)
+scripts/              Conversion de datasets y evaluacion (T6, T9)
 configs/              Configuraciones de camara
 datos/                Videos, anotaciones y trayectorias (no versionados)
 salidas/              Resultados de ejecucion (no versionados)
-docs/                 Plan de implementacion
+docs/                 Plan, datos (DATOS.md) y evaluacion (EVALUACION.md)
+```
+
+Salidas de cada corrida en `--salida`:
+
+- `video_anotado.mp4`: caja, ID, alerta experimental y riesgo por vehiculo
+  (verde 0-29, amarillo 30-59, rojo 60-100), con advertencia permanente si
+  falta calibracion.
+- `eventos.csv`: un evento por activacion, con variables medidas y umbrales.
+- `resumen.json`: resumen por vehiculo, configuracion normalizada y su
+  SHA-256, version del modelo, FPS y desglose de rendimiento por etapa.
+
+## Pruebas y evaluacion
+
+```bash
+python -m pytest
+```
+
+```bash
+python scripts/convertir_trayectorias.py --help
+```
+
+```bash
+python scripts/evaluar_reglas.py --help
+```
+
+```bash
+python scripts/evaluar_uadetrac.py --help
 ```
 
 ## Convenciones

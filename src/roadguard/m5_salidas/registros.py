@@ -72,8 +72,8 @@ def fila_evento(evento: Evento) -> dict[str, Any]:
         "umbral_persistencia": u.get("persistencia"),
         "umbral_cambios": None if u.get("cambios") is None else int(u["cambios"]),
         "umbral_ventana": u.get("ventana"),
-        "variables_json": json.dumps(_limpio(v), sort_keys=True),
-        "umbrales_json": json.dumps(_limpio(u), sort_keys=True),
+        "variables_json": json.dumps(limpiar_json(v), sort_keys=True),
+        "umbrales_json": json.dumps(limpiar_json(u), sort_keys=True),
     }
 
 
@@ -98,9 +98,9 @@ def exportar_resumen_json(
     """
     documento = {
         "aviso": AVISO,
-        "ejecucion": _limpio(asdict(ejecucion)),
-        "resumen_eventos": _limpio(ejecucion.n_eventos),
-        "vehiculos": [_limpio(asdict(r)) for r in sorted(resumenes, key=lambda r: r.id_vehiculo)],
+        "ejecucion": limpiar_json(asdict(ejecucion)),
+        "resumen_eventos": limpiar_json(ejecucion.n_eventos),
+        "vehiculos": [limpiar_json(asdict(r)) for r in sorted(resumenes, key=lambda r: r.id_vehiculo)],
     }
     _escritura_atomica(
         ruta, lambda f: json.dump(documento, f, ensure_ascii=False, indent=2)
@@ -113,14 +113,14 @@ def _valor(x: Any) -> Any:
     return x.value if isinstance(x, Enum) else x
 
 
-def _limpio(x: Any) -> Any:
+def limpiar_json(x: Any) -> Any:
     """Convierte enums, tuplas y no-finitos a tipos JSON estables."""
     if isinstance(x, Enum):
         return x.value
     if isinstance(x, dict):
-        return {str(_valor(k)): _limpio(v) for k, v in x.items()}
+        return {str(_valor(k)): limpiar_json(v) for k, v in x.items()}
     if isinstance(x, (list, tuple)):
-        return [_limpio(v) for v in x]
+        return [limpiar_json(v) for v in x]
     if isinstance(x, float) and not math.isfinite(x):
         return None
     return x
