@@ -113,6 +113,9 @@ class Configuracion:
     umbrales: Umbrales
     confianza_min_deteccion: float = 0.25
     confianza_min_carril: float = 0.60
+    # Paso 4: permanencia estable en el nuevo carril antes de confirmar un
+    # cambio completo. Campo agregado; no forma parte de los umbrales RF7-RF11.
+    permanencia_cambio_carril: float = 1.0   # s
 
 
 # ---------------------------------------------------------------------------

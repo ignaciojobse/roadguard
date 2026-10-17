@@ -50,6 +50,10 @@ clases:
 confianza_min_deteccion: 0.25
 confianza_min_carril: 0.60
 
+# Paso 4: segundos de permanencia estable en el nuevo carril antes de
+# confirmar un cambio completo. Las oscilaciones sobre la linea no cuentan.
+permanencia_cambio_carril: 1.0
+
 # Umbrales de las reglas (RF7-RF11). Valores de la propuesta.
 umbrales:
   # RF7 - Cercania peligrosa
