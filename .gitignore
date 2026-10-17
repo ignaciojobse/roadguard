@@ -1,0 +1,18 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.DS_Store
+
+# Pesos de modelos
+*.pt
+
+# Datos: no se versionan, se documentan en docs/
+datos/videos/*
+datos/anotaciones/*
+!datos/videos/.gitkeep
+!datos/anotaciones/.gitkeep
+
+# Artefactos de empaquetado
+*.egg-info/
