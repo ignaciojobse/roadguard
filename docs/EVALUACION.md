@@ -85,7 +85,16 @@ revisar umbrales (riesgo 4.4).
 
 | Secuencia | Condicion | mAP@0.5 | AP agnostico | IDF1 | Intercambios de ID | FPS det.+seg. |
 |---|---|---|---|---|---|---|
-| _pendiente_ | | | | | | |
+| MVI_41063 | sunny | _pendiente_ | | | | |
+| MVI_40243 | cloudy | _pendiente_ | | | | |
+| MVI_40751 | night | _pendiente_ | | | | |
+
+Estado al 17-10-2026: el pipeline completo se ejecuto con YOLOv8n real
+(ultralytics 8.4.180, MPS) sobre un video de prueba armado con la imagen
+`bus.jpg` de Ultralytics: 100 cuadros a 16,5 FPS, ID estable, personas
+filtradas y advertencia de calibracion visible. **Falta la validacion con
+imagenes reales de trafico** (secuencias de `docs/DATOS.md`); el lector de
+anotaciones si se verifico contra los XML reales de UA-DETRAC.
 
 ### 4.2 Reglas
 

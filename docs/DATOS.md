@@ -44,13 +44,38 @@ la confusion car/van/truck propia de un modelo preentrenado en COCO.
 
 ### Secuencias seleccionadas
 
-Criterio: cubrir las cuatro condiciones de iluminacion/clima y al menos una
-densidad alta, con camaras estables y vias multicarril. Completar al
-seleccionar (no se registran secuencias que no se hayan revisado):
+Criterio: cubrir distintas condiciones de iluminacion/clima, con camaras
+estables (`camera_state="stable"`, coherente con el supuesto de camara
+fija) y vias multicarril.
 
-| Secuencia | Particion | Resolucion | FPS | Condicion | Densidad | Cuadros | Uso |
-|---|---|---|---|---|---|---|---|
-| _pendiente_ | | 960x540 | 25 | | | | mAP, IDF1 |
+Fuente usada: copia en Kaggle `bratjay/ua-detrac-orig` (11,5 GB completa),
+descargable sin credenciales con `kagglehub`. Permite bajar archivos
+sueltos, por lo que no hace falta el dataset completo:
+
+```python
+import kagglehub
+kagglehub.dataset_download(
+    "bratjay/ua-detrac-orig",
+    path="DETRAC-Train-Annotations-XML/DETRAC-Train-Annotations-XML/MVI_41063.xml",
+)
+kagglehub.dataset_download(
+    "bratjay/ua-detrac-orig",
+    path="DETRAC-Images/DETRAC-Images/MVI_41063/img00001.jpg",
+)
+```
+
+Preseleccion hecha leyendo solo los XML de anotacion (17-10-2026). Los
+datos vienen de los atributos del XML; **las imagenes aun no se revisaron y
+la validacion queda pendiente**:
+
+| Secuencia | Particion | Resolucion | FPS | Condicion | Camara | Cuadros anotados | Vehiculos (IDs) | Veh./cuadro | Estado |
+|---|---|---|---|---|---|---|---|---|---|
+| MVI_41063 | train | 960x540 | 25 | sunny | stable | 1505 | 167 | 6,7 | pendiente: descarga parcial (294 de 750 cuadros) |
+| MVI_40243 | train | 960x540 | 25 | cloudy | stable | 1265 | 173 | 8,3 | pendiente |
+| MVI_40751 | train | 960x540 | 25 | night | stable | 1145 | 41 | 6,5 | pendiente |
+
+Alternativa con lluvia y camara estable: MVI_63521 (2055 cuadros, 90 IDs).
+Plan previsto: primeros 750 cuadros (30 s) de cada secuencia, unos 180 MB.
 
 Para la demostracion end-to-end (>= 3 secuencias) las imagenes se pueden
 convertir a MP4 con `ffmpeg -framerate 25 -i img%05d.jpg -c:v libx264
