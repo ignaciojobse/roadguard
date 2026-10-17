@@ -1,0 +1,19 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.DS_Store
+
+# Pesos de modelos
+*.pt
+
+# Datos y salidas: no se versionan, se documentan en docs/
+datos/videos/*
+datos/anotaciones/*
+datos/trayectorias/*
+salidas/*
+!datos/videos/.gitkeep
+!datos/anotaciones/.gitkeep
+!datos/trayectorias/.gitkeep
+!salidas/.gitkeep
