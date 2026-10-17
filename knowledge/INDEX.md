@@ -27,7 +27,7 @@
 ## Proyectos
 
 - [datos-y-evaluacion](./projects/datos-y-evaluacion/datos-y-evaluacion.md): datos de referencia y protocolo de evaluación (M6).
-- [entregas](./projects/entregas/entregas.md): bitácoras, presentaciones, manual y video del ramo.
+- [entregas](./projects/entregas/entregas.md): bitácoras, presentaciones, manual y video del ramo. Incluye la [marca](./projects/entregas/marca/MARCA.md).
 
 ## Cómo se trabaja
 

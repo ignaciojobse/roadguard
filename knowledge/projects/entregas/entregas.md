@@ -6,6 +6,7 @@
 
 - [Bitácora 1](./bitacora-1.md): borrador para el 21-oct.
 - [Presentación de avance](./presentacion-avance.md): guion para el 22-oct.
+- [Marca](./marca/MARCA.md): logo, paleta, tipografía y reglas de lenguaje.
 
 ## Decisiones abiertas
 

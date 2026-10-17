@@ -1,5 +1,7 @@
 # Presentación de avance — guion
 
+> **Deck:** `decks/roadguard-avance/` en el repo de decks de Pancho ([PR dreamxist/decks#1](https://github.com/dreamxist/decks/pull/1)), con PDF de respaldo `roadguard-avance.pdf`. Se avanza con flechas o espacio; `F` activa la pantalla completa. Las láminas 2 a 5 llevan una marca `[revisar: …]` para su dueño.
+>
 > 2026-10-22, sala K304, presencial obligatorio. Duración por confirmar; el guion está pensado para unos 10 minutos más preguntas. Cada integrante presenta su frente.
 
 | # | Lámina | Quién | Contenido | Evidencia a mostrar |

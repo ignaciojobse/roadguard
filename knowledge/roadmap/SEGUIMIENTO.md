@@ -11,9 +11,10 @@
 | Acordar el reparto de [ROADMAP](./ROADMAP.md#responsables) | Todos | pendiente | Propuesta escrita el 2026-10-17 |
 | Muestra NGSIM, cargador y eventos de referencia | Z | en revisión | `m6_evaluacion/`, 21 tests; PR de knowledge y M6 |
 | Protocolo de evaluación escrito | Z | en revisión | [PRD de datos y evaluación](../projects/datos-y-evaluacion/PRD.md) |
+| Marca RoadGuard | Z | hecho | [MARCA](../projects/entregas/marca/MARCA.md) |
 | Elegir 3 secuencias UA-DETRAC para la demo | Z | pendiente | Criterios escritos en el PRD; falta descargar el dataset |
-| Bitácora 1 | Z | en curso | [Borrador](../projects/entregas/bitacora-1.md); cada uno completa su sección |
-| Láminas de la presentación de avance | Z | pendiente | [Guion](../projects/entregas/presentacion-avance.md) |
+| Bitácora 1 | Z | en curso | [Bitácora](../projects/entregas/bitacora-1.md): partes de Z en versión final; faltan las secciones de J, R y C (plazo 20-oct) |
+| Láminas de la presentación de avance | Z | en revisión | Deck de 9 láminas con PDF de respaldo, [dreamxist/decks#1](https://github.com/dreamxist/decks/pull/1); láminas 2–5 marcadas `[revisar]` para sus dueños |
 | Plantear ADR-0002 y 0003 al docente | Z | pendiente | En la presentación del 22-oct |
 
 ## Hacia el prototipo (18 y 19 de noviembre)

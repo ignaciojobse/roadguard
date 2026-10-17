@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 80" role="img" aria-label="RoadGuard">
+  <g transform="translate(8 8)">
+    <path d="M32 2 L58 12 V34 C58 50 47 60 32 66 C17 60 6 50 6 34 V12 Z" fill="none" stroke="#4C9AFF" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M32 17 V25 M32 31 V39 M32 45 V53" stroke="#F2F5F8" stroke-width="5" stroke-linecap="round"/>
+  </g>
+  <text x="84" y="53" font-family="'Space Grotesk', -apple-system, sans-serif" font-size="40" font-weight="700" letter-spacing="-0.5" fill="#F2F5F8">Road<tspan fill="#4C9AFF">Guard</tspan></text>
+</svg>
