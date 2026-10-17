@@ -305,3 +305,9 @@ class ResumenEjecucion:
     n_cuadros_procesados: int
     calibrado: bool
     advertencias: list[str]
+    # Campos agregados en T7/T8 para reproducibilidad (Paso 6).
+    configuracion_sha256: str = ""
+    parametros: dict = field(default_factory=dict)       # Configuracion normalizada
+    n_eventos: dict = field(default_factory=dict)        # regla -> cantidad
+    fps_por_etapa: dict = field(default_factory=dict)    # M6: desglose de rendimiento
+    completada: bool = True                              # False si la corrida fallo
