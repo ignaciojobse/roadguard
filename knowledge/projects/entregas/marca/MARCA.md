@@ -50,3 +50,7 @@ Todos los pares de la paleta cumplen WCAG AA para texto (≥ 4,5 : 1) sobre el f
 
 - Propuesta TEL-328, §1.1, §1.2 y RF11.
 - Toolkit de decks de Francisco Zúñiga (`shared/css/base.css`, Space Grotesk).
+
+## Documentos impresos
+
+Para la bitácora, el manual y cualquier PDF: página blanca, texto `#141B24`, cabecera en una banda `#0B0F14` con el logo ([roadguard-logo-oscuro.png](./roadguard-logo-oscuro.png)), y el acento `#4C9AFF` solo en filetes y subrayados de títulos, porque como texto sobre blanco no llega a AA. Las tablas usan `#E8EDF3` en la cabecera. Si Space Grotesk no está instalada, se usa Arial. Lo genera `exportar_entregable.py`.

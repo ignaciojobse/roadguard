@@ -48,7 +48,7 @@ UA-DETRAC → video → M2 ──► cajas e IDs ──► mAP@0.5 · IDF1 · ca
 | Dataset | Uso | Formato y procedencia | Estado |
 |---|---|---|---|
 | **NGSIM US-101** | Referencia de RF7–RF9 | CSV público, data.transportation.gov `8ect-6jqj`. 10 Hz, pies y pies/s. Carriles 1–5 principales, 6 auxiliar, 7 entrada y 8 salida | `Confirmada`: muestra de 60 s descargada (72.270 filas) |
-| **UA-DETRAC** | mAP, IDF1 y demo | 100 secuencias (60 de entrenamiento y 40 de prueba), 25 FPS, 960×540, anotación XML por cuadro con ID, caja, clase (`car`, `bus`, `van`, `others`) y regiones ignoradas | `Brecha`: no descargado |
+| **UA-DETRAC** | mAP, IDF1 y demo | 100 secuencias (60 de entrenamiento y 40 de prueba), 25 FPS, 960×540, anotación XML por cuadro con ID, caja, clase (`car`, `bus`, `van`, `others`) y regiones ignoradas | `Confirmada`: las 40 XML de prueba descargadas y resumidas (ver §7). Clases presentes en prueba: `car` 548.555 cajas, `bus` 71.785, `van` 38.519 y `others` 16.915; sin motos |
 | **highD** | Segunda referencia, si hay acceso | CSV por grabación, 25 Hz, con THW, TTC y carril | `Brecha`: acceso no verificado |
 
 **Invariantes de la conversión NGSIM.** `x_camino = Local_Y` y `y_camino = Local_X`, en metros. `t` se cuenta desde el primer `Global_Time` del archivo. La distancia es `Space_Headway` (frente a frente, la misma convención que M3). THW y TTC se calculan con `calcular_thw` y `calcular_ttc` de M3, nunca se leen del archivo.
@@ -99,6 +99,38 @@ Promesas: precisión, recobrado y F1 son None si su denominador es 0 (Paso 3)
 
 Del conjunto de prueba de UA-DETRAC: (1) una de día con buen tiempo y flujo medio como caso base; (2) una con oclusiones o alta densidad; (3) una de noche o con lluvia. Las tres con al menos dos carriles en el mismo sentido y visibles completos, y con referencias rectas en la calzada para la homografía (líneas de carril y marcas de distancia conocida).
 
+### Secuencias elegidas (2026-10-17)
+
+Se resumieron las 40 secuencias de prueba con `resumir_secuencia` y se miraron cuadros de 15 candidatas con cámara estable. Se descartaron las que muestran intersecciones (MVI_40853, 40855, 40891, 40892 y 40793), porque ahí no hay carriles continuos en un mismo sentido, y las de cámara inestable, porque una homografía fija no sirve si la cámara se mueve.
+
+| Rol | Secuencia | Condición (XML) | Cuadros | Vehículos | Densidad media | Por qué |
+|---|---|---|---|---|---|---|
+| Base | **MVI_39271** | sunny · stable | 1.566 | 47 | 5,4 | Día, flujo medio, vista lateral oblicua de una calzada de 3 carriles con línea discontinua nítida. Hay un paradero de buses, así que aparecen cambios de carril reales |
+| Densa | **MVI_40714** | cloudy · stable | 1.180 | 62 | 28,8 | La segunda más densa del conjunto de prueba. Cola de 4–5 carriles hacia la cámara, con buses articulados que tapan autos: caso de oclusión, IDF1 y vehículos detenidos |
+| Noche | **MVI_40742** | night · stable | 1.655 | 33 | 15,2 | Anochecer con luces encendidas, 3–4 carriles en el mismo sentido y muchos buses (9.957 de 25.140 cajas). Es el caso de baja luz y oclusión grande |
+
+Los cuadros de referencia quedaron en `datos/ua-detrac/referencia/<secuencia>.jpg` (960×540, fuera de git).
+
+**Límite que hay que declarar:** UA-DETRAC son avenidas urbanas de Beijing y Tianjin, no autopistas. Sirven para la propuesta («autopistas o vías multicarril»), pero las velocidades son urbanas. En MVI_40714 la cola está casi detenida, así que RF7 (v > 5 m/s) no se va a activar ahí: esa secuencia mide percepción, no reglas.
+
+### Notas de calibración para R
+
+Valores de referencia en vías urbanas chinas, todos `Candidata a validar` hasta comprobarlos en la imagen:
+
+- **Ancho de carril:** 3,5 m, o 3,25 m en carriles solo para autos livianos (CJJ 37-2012, norma china de diseño de vías urbanas).
+- **Línea discontinua** (GB 5768.3-2009): 6 m de trazo y 9 m de hueco en vías de 60 km/h o más; 2 m de trazo y 4 m de hueco bajo 60 km/h. **Para saber cuál aplica, se mide la razón trazo/hueco en la imagen** sobre la parte más cercana a la cámara: 0,67 o 0,5.
+- **Control cruzado:** un bus urbano rígido mide unos 12 m y uno articulado unos 18 m. Sirve para verificar la homografía, no para construirla, porque la caja no es plana sobre la calzada.
+
+| Secuencia | Qué usar para la homografía | Región de interés sugerida | Cuidado |
+|---|---|---|---|
+| MVI_39271 | Extremos de dos o tres trazos consecutivos de las dos líneas discontinuas de la calzada cercana, más el borde del bandejón con flores como recta | La calzada cercana entre el borde del paradero y el bandejón, aproximadamente x 40–900 e y 290–500 px | Vista casi rasante: los metros a la derecha se comprimen mucho. Conviene recortar la región a donde los trazos todavía se distinguen |
+| MVI_40714 | Las líneas discontinuas de la calzada izquierda, que convergen al punto de fuga, y sus trazos en la mitad inferior, que se ven largos y nítidos | La calzada izquierda, entre la vereda y la baranda central; se excluye la calzada derecha, que va en sentido contrario | Los vehículos detenidos tapan las líneas: los puntos se marcan sobre un cuadro donde se vean, por ejemplo uno temprano de la secuencia |
+| MVI_40742 | Las líneas blancas de la parte inferior y la baranda del borde izquierdo como recta | La calzada cercana, bajo la baranda central | Poca luz y buses grandes tapan las líneas. Si no se logran 4 puntos confiables, la secuencia corre **sin calibración** y vale como prueba del Paso 5 |
+
+### Cómo reproducir la descarga
+
+El sitio oficial (`detrac-db.rit.albany.edu`) redirige a la página del laboratorio y ya no sirve archivos. Se usó un espejo público en Hugging Face del zip original (`ShantyCam/ua-detrac`, `ua-detrac-orig.zip`, 9,9 GB, licencia CC BY-NC-SA del dataset). Es una copia de terceros, no oficial. El zip se leyó por rangos HTTP, sin bajarlo completo: las 40 XML de prueba (221 MB) y cuadros sueltos (4,4 MB).
+
 ## 8. Milestones
 
 | Corte | Resultado verificable |
@@ -113,7 +145,7 @@ Del conjunto de prueba de UA-DETRAC: (1) una de día con buen tiempo y flujo med
 - [x] THW y TTC de la referencia salen de las funciones de M3.
 - [x] Los eventos de referencia respetan persistencia, cambio completo y ventana de corte (tests).
 - [x] El F1 es uno a uno y queda en None sin denominador (tests).
-- [ ] Las 3 secuencias UA-DETRAC están elegidas y documentadas.
+- [x] Las 3 secuencias UA-DETRAC están elegidas y documentadas.
 - [ ] mAP@0.5, IDF1, cambios de ID y FPS están medidos.
 - [ ] El F1 de reglas está medido con M4 sobre trayectorias degradadas.
 
@@ -123,7 +155,8 @@ Del conjunto de prueba de UA-DETRAC: (1) una de día con buen tiempo y flujo med
 |---|---|---|---|
 | RF7 marca al 43 % de los vehículos en congestión | alto | Medir en flujo libre; discutir umbrales o [ADR-0003](../../decisions/0003-puntaje-ponderado-por-severidad.md) | Z con C |
 | Ruido de NGSIM | medio | Revisar si los cambios de carril espurios inflan zigzag | Z |
-| UA-DETRAC no tiene motos | medio | Aceptar mAP sin clase como métrica principal | Z con J |
+| UA-DETRAC no tiene motos (confirmado en las 40 XML de prueba) | medio | Aceptar mAP sin clase como métrica principal | Z con J |
+| Espejo no oficial de UA-DETRAC | bajo | Si desaparece, la otra fuente conocida es Kaggle, que pide cuenta | Z |
 | 960×540 frente al criterio de 720p | bajo | Declarar el procedimiento de escalado | Z con J |
 | highD | bajo | Confirmar si se pidió acceso | Z |
 
