@@ -8,7 +8,7 @@
 >
 > Ignacio, súper bueno lo que subiste. Sobre eso armé la evaluación con datos reales de NGSIM y un knowledge con todo el contexto, el plan y un reparto propuesto:
 > • PR #2 (knowledge + evaluación): https://github.com/ignaciojobse/roadguard/pull/2
-> • PR #3 (3 secuencias UA-DETRAC elegidas): PR_SECUENCIAS
+> • PR #3 (3 secuencias UA-DETRAC elegidas): https://github.com/ignaciojobse/roadguard/pull/3
 > • Deck del jueves: https://decks-umbra-git-roadguard-avance-franciscozunigaps-projects.vercel.app/roadguard-avance
 >
 > Propuesta de reparto (para que quede parejo, porque Ignacio ya hizo harto): Ignacio integración y CLI; Giancarlos calibración de las 3 secuencias y video anotado (M5); Francisco reglas y puntaje (M4); yo datos, evaluación y métricas. El detalle está en knowledge/roadmap/ROADMAP.md, si les tinca o quieren cambiar algo, díganme.
