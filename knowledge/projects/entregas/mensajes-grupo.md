@@ -14,7 +14,8 @@
 > Propuesta de reparto (para que quede parejo, porque Ignacio ya hizo harto): Ignacio integración y CLI; Giancarlos calibración de las 3 secuencias y video anotado (M5); Francisco reglas y puntaje (M4); yo datos, evaluación y métricas. El detalle está en knowledge/roadmap/ROADMAP.md, si les tinca o quieren cambiar algo, díganme.
 >
 > Lo que necesito de cada uno:
-> • **Todos, antes del lunes 20:** su sección de la bitácora 1 (knowledge/projects/entregas/bitacora-1.md, donde dice «Completar») y revisar su lámina del deck (marcadas [revisar]).
+> • **Todos, antes del lunes 20:** la bitácora 1 ya está completa (knowledge/projects/entregas/bitacora-1.pdf). Sus filas las redacté con lo que hay en el repo, así que solo confírmenlas o corríjanlas, y agreguen un problema o desvío si tienen. Revisen también su lámina del deck (marcadas [revisar]).
+> • **Giancarlos:** en la bitácora tu fila describe el código de M3, pero falta lo que aportaste tú. Mándame una línea con eso.
 > • **Ignacio:** si alcanzas, un clip corto de M2 con cajas e IDs para la lámina 3.
 > • **Giancarlos:** calibrar las 3 secuencias para el **lunes 26**. Ya están elegidas (MVI_39271, MVI_40714, MVI_40742) y en el PRD dejé notas de qué líneas usar.
 > • **Francisco:** para la lámina 5 basta el diseño de las máquinas de estado; M4 queda para el 1-nov.
