@@ -4,6 +4,7 @@
 
 | ADR | Fecha | Decisión | Estado |
 |---|---|---|---|
+| — | 2026-10-17 | UA-DETRAC se obtiene del espejo `ShantyCam/ua-detrac` en Hugging Face, leído por rangos; el sitio oficial está caído | `accepted` |
 | [0003](./0003-puntaje-ponderado-por-severidad.md) | 2026-10-17 | Puntaje ponderado por severidad (TET/TIT), combinación acotada y decaimiento continuo, con pesos calibrados contra la referencia | `proposed` |
 | [0002](./0002-patron-velocidad-anomala.md) | 2026-10-17 | Cuarto patrón: velocidad anómala respecto del flujo del carril | `proposed` |
 | [0001](./0001-ngsim-como-referencia-de-reglas.md) | 2026-10-17 | NGSIM reemplaza a highD como referencia para validar reglas, según la regla de §4.4 de la propuesta | `accepted` |

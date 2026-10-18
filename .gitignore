@@ -12,6 +12,7 @@ venv/
 datos/videos/*
 datos/anotaciones/*
 datos/ngsim/*
+datos/ua-detrac/*
 !datos/videos/.gitkeep
 !datos/anotaciones/.gitkeep
 
