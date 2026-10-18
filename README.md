@@ -15,9 +15,11 @@ son configurables y no se presentan como limites legales.
 
 ## Alcance de esta rama
 
-Esta rama contiene la base compartida y los modulos de percepcion y
-geometria. El motor de reglas, la visualizacion y exportacion, la evaluacion
-y la integracion end-to-end se desarrollan por separado y no estan aqui.
+Esta rama contiene la base compartida, los modulos de percepcion y
+geometria y la primera parte de la evaluacion (datos de referencia y F1 de
+eventos). El motor de reglas, la visualizacion y exportacion y la integracion
+end-to-end se desarrollan por separado y no estan aqui. El reparto y el
+estado de cada frente viven en `knowledge/roadmap/`.
 
 | Modulo | Estado en esta rama | Responsable |
 |---|---|---|
@@ -27,8 +29,8 @@ y la integracion end-to-end se desarrollan por separado y no estan aqui.
 | M3 Geometria vial y trayectorias | Implementado | Giancarlos Ricci |
 | M4 Motor de reglas y riesgo | Fuera de esta rama | Francisco Castillo |
 | M5 Visualizacion y exportacion | Fuera de esta rama | Francisco Castillo |
-| M6 Evaluacion y diagnostico | Fuera de esta rama | Francisco Zuniga |
-| Datos y seleccion de secuencias | Fuera de esta rama | Francisco Zuniga |
+| M6 Evaluacion y diagnostico | Parcial: referencia NGSIM y F1 de eventos | Francisco Zuniga |
+| Datos y seleccion de secuencias | Parcial: NGSIM listo, UA-DETRAC pendiente | Francisco Zuniga |
 
 El contrato de datos de `tipos.py` se conserva completo, incluidas las
 estructuras que consumen los modulos posteriores (`Evento`, `PuntajeRiesgo`,
@@ -55,10 +57,12 @@ src/roadguard/
   m1_ingesta/         IC   Ingesta y configuracion        RF1, RF4
   m2_deteccion/       DTS  Deteccion y seguimiento        RF2, RF3
   m3_geometria/       GVT  Geometria vial y trayectorias  RF4, RF5, RF6
+  m6_evaluacion/      ED   Datos de referencia y metricas de eventos
 tests/                Pruebas unitarias (pytest)
 configs/              Configuraciones de camara
 datos/                Videos y anotaciones (no versionados)
 docs/                 Plan de implementacion
+knowledge/            Contexto, decisiones, reparto y seguimiento del proyecto
 ```
 
 ## Uso como biblioteca

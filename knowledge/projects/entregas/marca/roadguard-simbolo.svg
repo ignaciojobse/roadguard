@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 72" role="img" aria-label="RoadGuard">
+  <path d="M32 4 L58 14 V36 C58 52 47 62 32 68 C17 62 6 52 6 36 V14 Z" fill="none" stroke="#4C9AFF" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M32 19 V27 M32 33 V41 M32 47 V55" stroke="#F2F5F8" stroke-width="5" stroke-linecap="round"/>
+</svg>
