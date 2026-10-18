@@ -13,7 +13,7 @@
 | Protocolo de evaluación escrito | Z | en revisión | [PRD de datos y evaluación](../projects/datos-y-evaluacion/PRD.md) |
 | Marca RoadGuard | Z | hecho | [MARCA](../projects/entregas/marca/MARCA.md) |
 | Elegir 3 secuencias UA-DETRAC para la demo | Z | en revisión | MVI_39271, MVI_40714 y MVI_40742, con notas de calibración para R ([PRD §7](../projects/datos-y-evaluacion/PRD.md#secuencias-elegidas-2026-10-17)) |
-| Bitácora 1 | Z | en curso | [Bitácora](../projects/entregas/bitacora-1.md): partes de Z en versión final y exportable a DOCX/PDF con un comando; faltan las secciones de J, R y C (plazo 20-oct) |
+| Bitácora 1 | Z | en revisión | [Bitácora](../projects/entregas/bitacora-1.md) completa y exportada a DOCX y PDF (2026-10-18); las filas de J, R y C se redactaron desde el repo y cada uno las confirma antes del 20-oct |
 | Láminas de la presentación de avance | Z | en revisión | Deck de 9 láminas con PDF de respaldo, [dreamxist/decks#1](https://github.com/dreamxist/decks/pull/1), [preview](https://decks-umbra-git-roadguard-avance-franciscozunigaps-projects.vercel.app/roadguard-avance); láminas 2–5 marcadas `[revisar]` para sus dueños |
 | Plantear ADR-0002 y 0003 al docente | Z | pendiente | En la presentación del 22-oct; pregunta redactada en [mensajes](../projects/entregas/mensajes-grupo.md) |
 | Enviar al grupo el reparto, los plazos y los links | Z | pendiente | Borrador en [mensajes](../projects/entregas/mensajes-grupo.md) |
