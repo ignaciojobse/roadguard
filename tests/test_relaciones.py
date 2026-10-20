@@ -1,4 +1,4 @@
-"""RF6. Relaciones viales (m3_geometria/relaciones.py).
+"""RF6 Relaciones viales (m3_geometria/relaciones.py).
 
 Casos minimos a cubrir:
   - THW = distancia / velocidad del seguidor.

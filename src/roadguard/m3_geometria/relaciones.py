@@ -1,4 +1,4 @@
-"""M3 - Predecesor/seguidor, distancia, THW y TTC (RF6)."""
+"""M3  Predecesor/seguidor, distancia, THW y TTC (RF6)."""
 
 from __future__ import annotations
 
