@@ -2,7 +2,7 @@
 
 Casos minimos a cubrir:
   - Un punto dentro de un carril recibe su indice y una confianza que cae
-    hacia la linea divisoria; fuera de todo carril -> (None, 0.0).
+    hacia la linea divisoria; fuera de todo carril  (None, 0.0).
   - Un cambio se confirma solo tras permanencia estable en el nuevo carril,
     registrando t_cruce y t_confirmacion.
   - Las oscilaciones sobre la linea y los cruces breves no generan cambio.

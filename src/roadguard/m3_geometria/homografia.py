@@ -1,4 +1,4 @@
-"""M3 - Rectificacion de perspectiva a vista de pajaro (RF4)."""
+"""M3  Rectificacion de perspectiva a vista de pajaro (RF4)."""
 
 from __future__ import annotations
 

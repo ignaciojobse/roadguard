@@ -12,7 +12,7 @@ from roadguard.tipos import CambioCarril, Carril
 def asignar_carril(
     punto_px: tuple[float, float], carriles: list[Carril]
 ) -> tuple[Optional[int], float]:
-    """Devuelve (indice_carril, confianza) para un punto de calzada (RF4).
+    """Devuelve (indice_carril, confianza) para un punto de calzada.
 
     La confianza vale 1 en el eje del carril y cae linealmente a 0 sobre la
     linea divisoria. Se mide sobre la seccion mas angosta del poligono que
@@ -40,7 +40,7 @@ class _EstadoCarril:
 
 
 class DetectorCambioCarril:
-    """Confirma cambios de carril COMPLETOS (Paso 4).
+    """
 
     Un cambio solo se confirma tras permanencia estable en el nuevo carril.
     Las oscilaciones sobre la linea no cuentan como cambio completo y deben

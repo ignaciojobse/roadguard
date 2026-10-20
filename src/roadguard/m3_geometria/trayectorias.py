@@ -1,4 +1,4 @@
-"""M3 - Historial causal, suavizado y velocidades (RF5)."""
+"""M3  Historial causal, suavizado y velocidades (RF5)."""
 
 from __future__ import annotations
 
