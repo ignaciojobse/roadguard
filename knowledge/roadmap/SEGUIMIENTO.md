@@ -25,7 +25,7 @@
 |---|---|---|---|
 | Base, M1, M2 y M3 | J | hecho | PR #1, 57 tests |
 | Calibrar YAML de las 3 secuencias | R | en curso | 1 de 3: `configs/MVI_39271.yaml` con `scripts/calibrar_ua_detrac.py` y `m3_geometria/calibracion.py` (RMSE 0,14 m; predice trazos lejanos a ~5 px; 60 km/h en un auto real). MVI_40714 y MVI_40742 tienen la calzada tapada en los 7 cuadros bajados: faltan más cuadros para armar un fondo sin vehículos. Plazo 26-oct |
-| M4 reglas RF7–RF9 y puntaje RF10–RF11 | C | pendiente | Puede probar ya con `cargar_ngsim` |
+| M4 reglas RF7–RF9 y puntaje RF10–RF11 | C | en curso | Primer avance RF7 (`m4_reglas/cercania.py`): eventos streaming y demo sintetica `python scripts/demo_cercania.py`; faltan RF8–RF11 e integracion. |
 | M5 MP4 anotado, CSV de eventos y JSON por vehículo | R | en curso | Primera parte en `main` (`m5_salidas/`): cajas, ID, clase, carril, advertencia sin calibración y escritor MP4, 15 tests. Faltan colores de riesgo, alertas, CSV y JSON, que dependen de M4 |
 | Integración y CLI | J | pendiente | — |
 | Degradación de trayectorias y F1 de reglas | Z | pendiente | Depende de M4 |
