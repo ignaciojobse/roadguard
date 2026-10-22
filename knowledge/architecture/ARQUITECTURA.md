@@ -11,7 +11,7 @@
 | M2 Detección y seguimiento | `m2_deteccion/` | RF2, RF3 | J | En `main` |
 | M3 Geometría vial y trayectorias | `m3_geometria/` | RF4, RF5, RF6 | R (implementó J) | En `main` |
 | M4 Motor de reglas y riesgo | `m4_reglas/` (por crear) | RF7–RF10 | C | Pendiente |
-| M5 Visualización y exportación | `m5_salidas/` (por crear) | RF11, RF12 | Ver [ROADMAP](../roadmap/ROADMAP.md#responsables) | Pendiente |
+| M5 Visualización y exportación | `m5_salidas/` | RF11, RF12 | Ver [ROADMAP](../roadmap/ROADMAP.md#responsables) | Parcial: cajas, ID, carril y MP4 anotado |
 | M6 Evaluación y diagnóstico | `m6_evaluacion/` | Verifica RF2–RF12 | Z | Parcial: referencia NGSIM y F1 de eventos |
 | Integración y CLI | por definir | RF1, RF12 | Ver [ROADMAP](../roadmap/ROADMAP.md#responsables) | Pendiente |
 

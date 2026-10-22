@@ -28,7 +28,7 @@ estado de cada frente viven en `knowledge/roadmap/`.
 | M2 Deteccion y seguimiento | Implementado | Ignacio Jobse |
 | M3 Geometria vial y trayectorias | Implementado | Giancarlos Ricci |
 | M4 Motor de reglas y riesgo | Fuera de esta rama | Francisco Castillo |
-| M5 Visualizacion y exportacion | Fuera de esta rama | Francisco Castillo |
+| M5 Visualizacion y exportacion | Parcial: cajas, ID, carril y MP4 anotado | Francisco Castillo |
 | M6 Evaluacion y diagnostico | Parcial: referencia NGSIM y F1 de eventos | Francisco Zuniga |
 | Datos y seleccion de secuencias | Parcial: NGSIM listo, UA-DETRAC pendiente | Francisco Zuniga |
 
@@ -57,6 +57,7 @@ src/roadguard/
   m1_ingesta/         IC   Ingesta y configuracion        RF1, RF4
   m2_deteccion/       DTS  Deteccion y seguimiento        RF2, RF3
   m3_geometria/       GVT  Geometria vial y trayectorias  RF4, RF5, RF6
+  m5_salidas/         VE   Video anotado (parcial)              RF11, RF12
   m6_evaluacion/      ED   Datos de referencia y metricas de eventos
 tests/                Pruebas unitarias (pytest)
 configs/              Configuraciones de camara
