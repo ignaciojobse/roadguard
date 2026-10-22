@@ -1,0 +1,120 @@
+# Configuracion de camara de RoadGuard (RF1): MVI_39271.
+#
+# Generado por scripts/calibrar_ua_detrac.py; no editar a mano, cambiar los
+# puntos en el script y volver a generarlo.
+#
+# Calibracion (M3, RF4): homografia desde dos lineas discontinuas de
+# 6 m de trazo y 9 m de hueco, separadas por un carril de
+# 3.5 m. Ejes: x en el sentido de avance, y lateral, en metros.
+#   Error de reproyeccion: RMSE 0.14 m, maximo 0.24 m.
+#   Desfase entre los trazos de las dos lineas: 1.64 m.
+#   Camara implicita: focal 833 px, inconsistencia 0.16.
+# Estado de cada dato:
+#   Confirmada: escala longitudinal (predice los trazos lejanos a ~5 px y da
+#     60 km/h para un auto del cuadro 1 al 11).
+#   Candidata a validar: ancho de carril de 3,5 m (CJJ 37-2012; la camara
+#     admite entre 3,0 y 3,5 m) y el carril junto al paradero, sin linea visible.
+# Los umbrales NO constituyen limites legales (seccion 1.1).
+
+camara:
+  nombre: MVI_39271
+  descripcion: >-
+    UA-DETRAC prueba, dia soleado, camara fija. Calzada cercana (entre el paradero de buses y el bandejon); el trafico avanza de derecha a izquierda, acercandose a la camara.
+
+# Region de interes: poligono en coordenadas de imagen (px), x de -25 a
+# 25 m y todo el ancho de la calzada.
+region_interes:
+  - [924.6, 285.2]
+  - [31.3, 545]
+  - [-82.6, 374.1]
+  - [724.7, 249.1]
+
+# Carriles: poligonos en px, construidos desde sus bordes en metros
+# [-3.3, 0.0, 3.5, 7.0, 13.2]. Carril 0 junto al bandejon.
+carriles:
+  - indice: 0
+    poligono:
+      - [924.6, 285.2]
+      - [31.3, 545]
+      - [-0.6, 497.2]
+      - [878.6, 276.9]
+  - indice: 1
+    poligono:
+      - [878.6, 276.9]
+      - [-0.6, 497.2]
+      - [-28.1, 455.9]
+      - [833.4, 268.7]
+  - indice: 2
+    poligono:
+      - [833.4, 268.7]
+      - [-28.1, 455.9]
+      - [-50.8, 421.8]
+      - [791.6, 261.2]
+  - indice: 3
+    poligono:
+      - [791.6, 261.2]
+      - [-50.8, 421.8]
+      - [-82.6, 374.1]
+      - [724.7, 249.1]
+
+# Correspondencias imagen <-> camino (metros).
+homografia:
+  puntos_imagen:
+    - [637, 338]
+    - [543, 361]
+    - [349, 410]
+    - [161, 455]
+    - [560, 328]
+    - [463, 348]
+    - [255, 396]
+    - [69, 435]
+  puntos_camino:
+    - [0, 0]
+    - [6, 0]
+    - [15, 0]
+    - [21, 0]
+    - [1.635, 3.5]
+    - [7.635, 3.5]
+    - [16.635, 3.5]
+    - [22.635, 3.5]
+
+# Clases vehiculares a detectar (RF2).
+clases:
+  - automovil
+  - bus
+  - camion
+  - motocicleta
+
+confianza_min_deteccion: 0.25
+confianza_min_carril: 0.60
+
+# Paso 4: segundos de permanencia estable en el nuevo carril antes de
+# confirmar un cambio completo. Las oscilaciones sobre la linea no cuentan.
+permanencia_cambio_carril: 1.0
+
+# Umbrales de las reglas (RF7-RF11). Valores de la propuesta.
+umbrales:
+  # RF7 - Cercania peligrosa
+  cercania_velocidad_min: 5.0      # m/s
+  cercania_thw_max: 1.5            # s
+  cercania_persistencia: 2.0       # s
+
+  # RF8 - Zigzag
+  zigzag_cambios_min: 2
+  zigzag_ventana: 10.0             # s
+
+  # RF9 - Corte de carril
+  corte_ventana_post_cambio: 2.0   # s
+  corte_thw_max: 1.5               # s
+  corte_ttc_max: 3.0               # s
+
+  # RF10 - Puntaje de riesgo
+  aporte_cercania: 40
+  aporte_zigzag: 35
+  aporte_corte: 50
+  puntaje_maximo: 100
+  vigencia_aporte: 5.0             # s
+
+  # RF11 - Bandas de color
+  banda_verde_max: 29
+  banda_amarillo_max: 59
