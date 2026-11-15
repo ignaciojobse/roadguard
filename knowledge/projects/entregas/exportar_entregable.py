@@ -7,8 +7,9 @@ Uso:
 Genera <nombre>.docx (python-docx) y <nombre>.pdf (Chrome headless) junto al
 Markdown. La ruta de Chrome se puede cambiar con la variable CHROME. Entiende
 el subconjunto de Markdown del knowledge: titulos, parrafos, citas, listas,
-tablas, negrita, cursiva, codigo y enlaces (se exporta su texto). Los
-comentarios HTML (<!-- -->) son notas internas y no se exportan.
+tablas, negrita, cursiva, codigo, bloques de codigo cercados (```) y enlaces
+(se exporta su texto). Los comentarios HTML (<!-- -->) son notas internas y
+no se exportan.
 """
 
 from __future__ import annotations
@@ -47,7 +48,7 @@ INLINE = re.compile(r"(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\[[^\]]+\]\([^)]+\))")
 
 @dataclass
 class Bloque:
-    tipo: str  # titulo, h2, h3, parrafo, cita, vineta, numero, tabla
+    tipo: str  # titulo, h2, h3, parrafo, cita, vineta, numero, tabla, codigo
     texto: str = ""
     filas: list[list[str]] | None = None
 
@@ -62,6 +63,15 @@ def leer_bloques(ruta_md: Path) -> list[Bloque]:
             while i < len(lineas) and "-->" not in lineas[i]:
                 i += 1
             i += 1
+            continue
+        if linea.strip().startswith("```"):
+            cuerpo = []
+            i += 1
+            while i < len(lineas) and not lineas[i].strip().startswith("```"):
+                cuerpo.append(lineas[i])
+                i += 1
+            i += 1
+            bloques.append(Bloque("codigo", "\n".join(cuerpo)))
             continue
         if linea.startswith("|"):
             filas = []
@@ -171,6 +181,13 @@ def escribir_docx(bloques: list[Bloque], ruta: Path) -> None:
             p = doc.add_paragraph()
             p.paragraph_format.left_indent = Cm(0.5)
             _runs(p, b.texto, SECUNDARIO, 9.5)
+        elif b.tipo == "codigo":
+            p = doc.add_paragraph()
+            p.paragraph_format.left_indent = Cm(0.5)
+            run = p.add_run(b.texto)
+            run.font.name = "Courier New"
+            run.font.size = Pt(8.5)
+            run.font.color.rgb = TEXTO
         elif b.tipo in ("vineta", "numero"):
             estilo = "List Bullet" if b.tipo == "vineta" else "List Number"
             _runs(doc.add_paragraph(style=estilo), b.texto)
@@ -212,6 +229,8 @@ th, td {{ border: 1px solid #C9D2DC; padding: 5px 6px; vertical-align: top; text
 th {{ background: #{SUPERFICIE}; }}
 tr {{ page-break-inside: avoid; }}
 code {{ font-family: ui-monospace, Menlo, monospace; font-size: 9pt; }}
+pre {{ background: #F4F6F9; border-left: 3px solid #{ACENTO}; padding: 8px 10px; font-size: 8.5pt; line-height: 1.35; white-space: pre-wrap; margin: 6px 0 12px; }}
+pre code {{ font-size: inherit; }}
 """
 
 
@@ -243,6 +262,8 @@ def escribir_html(bloques: list[Bloque]) -> str:
             cuerpo.append(f"<table><thead><tr>{cab}</tr></thead><tbody>{filas}</tbody></table>")
         elif b.tipo == "cita":
             cuerpo.append(f"<blockquote>{_html_inline(b.texto)}</blockquote>")
+        elif b.tipo == "codigo":
+            cuerpo.append(f"<pre><code>{html.escape(b.texto)}</code></pre>")
         elif etiqueta:
             cuerpo.append(f"<li>{_html_inline(b.texto)}</li>")
         else:
