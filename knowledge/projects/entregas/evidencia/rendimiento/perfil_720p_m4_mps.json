@@ -1,0 +1,40 @@
+{
+  "maquina": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "procesador": "arm",
+  "python": "3.13.9",
+  "dispositivo": "mps",
+  "modelo": "ultralytics 8.4.180 / datos/modelos/yolov8n.pt",
+  "video_original": "datos/videos/MVI_39271.mp4",
+  "video_medido": "salidas/perfil_720p_mps/MVI_39271_720p.mp4",
+  "resolucion": [
+    1280,
+    720
+  ],
+  "escribe_video": true,
+  "n_cuadros": 1570,
+  "segundos_pared": 23.952,
+  "calentamiento_s": 0.995,
+  "fps_total": 65.57,
+  "ms_por_etapa": {
+    "deteccion": 11.196,
+    "seguimiento": 0.165,
+    "geometria": 0.087,
+    "reglas": 0.025,
+    "salidas": 3.365,
+    "lectura y otros": 0.414
+  },
+  "fps_por_etapa": {
+    "deteccion": 89.3,
+    "seguimiento": 6049.9,
+    "geometria": 11490.8,
+    "reglas": 39584.4,
+    "salidas": 297.2
+  },
+  "objetivo_fps": 15.0,
+  "cumple": true,
+  "eventos": {
+    "cercania_peligrosa": 7,
+    "zigzag": 2,
+    "corte_de_carril": 1
+  }
+}

@@ -34,8 +34,8 @@ Duración objetivo: 4 min 20 s. Si se corta algo, se corta la escena 3 a 20 s y 
 Grabación de pantalla a 1920×1080 (o la resolución nativa del notebook, en proporción 16:9), 30 FPS, sin notificaciones, terminal con fondo oscuro y fuente de 18 pt o más. Cada clip con 3 s de margen antes y después. Nombrar los archivos `19nov-<escena>-<descripción>.mp4`.
 
 - [ ] **Escena 4A o 4B, el corazón del video.** El comando completo corriendo sobre MVI_39271 de principio a fin, sin cortes, aunque dure 2 minutos. De ahí se sacan los tres momentos con zoom. Responsable: J.
-- [ ] El MP4 anotado reproducido a pantalla completa, 20 s por lo menos, con pista y rótulos legibles. Responsable: J o R.
-- [ ] Si existe el puntaje: 10 s donde un rótulo cambia de color, grabados dos veces (plano general y zoom). Responsable: J con C.
+- [x] El MP4 anotado reproducido a pantalla completa, 20 s por lo menos, con pista y rótulos legibles. Responsable: J o R. **15-nov (J):** recortado directo del `anotado.mp4`, sin grabar pantalla: `salidas/tomas/19nov-4-anotado-20s.mp4` (4 a 26 s de MVI_39271, 960×540, con las cercanías de los autos 4 y 12). Fuera de git; J se lo pasa a Z.
+- [x] Si existe el puntaje: 10 s donde un rótulo cambia de color, grabados dos veces (plano general y zoom). Responsable: J con C. **15-nov (J):** `salidas/tomas/19nov-4-cambio-color-corte.mp4` (41 a 51 s: autos 35 y 38 a amarillo con 40 y bus 30 a rojo con 85 tras corte y zigzag). El zoom se hace en la edición, recortando ese mismo clip. Cuadros fijos de apoyo: `19nov-4-veh4-antes.png` y `-despues.png` (9,9 y 10,4 s, verde 0 a amarillo 40), `19nov-4-veh30-corte.png` (46 s) y `19nov-4-veh30-rojo.png` (49,4 s).
 - [ ] Si existe el CSV: `head -20` del archivo de eventos en la terminal y el JSON de un vehículo con `cat`, cada uno 8 s quietos. Responsable: C.
 - [ ] Un clip de 10 s de una secuencia **sin calibrar** (MVI_40742 o MVI_40714) con la franja de advertencia visible, para la escena 5. Responsable: R.
 - [ ] La demo sintética de RF7: `python scripts/demo_cercania.py` completa, 15 s, con la terminal limpia antes de correrla. Responsable: C.
@@ -52,7 +52,7 @@ Mismas reglas de pantalla. Se pueden grabar desde el 16-nov y ya quedan listos p
 - [ ] Escena 3: código de `tipos.py`, de `Evento` a `ResumenEjecucion`, scroll lento 15 s, para ilustrar el contrato de datos. Responsable: J.
 - [ ] Escena 3: `m4_reglas/cercania.py`, la función que confirma la persistencia, 10 s quietos. Responsable: C.
 - [ ] Escena 6: `python -c` o cuaderno que carga NGSIM y cuenta eventos de referencia por regla (el comando de `datos-y-evaluacion.md`), 20 s. Responsable: Z.
-- [ ] Escenas 1 y 2: los 3 cuadros de referencia de UA-DETRAC y un cuadro anotado de MVI_39271 en PNG. Responsable: Z (cuadros), J o R (anotado).
+- [ ] Escenas 1 y 2: los 3 cuadros de referencia de UA-DETRAC y un cuadro anotado de MVI_39271 en PNG. Responsable: Z (cuadros), J o R (anotado). **Anotado hecho el 15-nov (J):** `salidas/tomas/19nov-2-cuadro-anotado.png` (9 s, 960×540).
 - [ ] Escena 3 y 6: láminas exportadas a 1920×1080 desde el deck de avance, con el estilo de la marca. Responsable: Z.
 - [ ] Voces en off de las escenas 1, 2, 3, 6 y 7 (Z) y la escena 5 (R): grabar en un cuarto cerrado, teléfono a 20 cm de la boca, cada párrafo tres veces, enviar sin comprimir. Si una escena cambia el jueves, se regraba solo esa.
 
