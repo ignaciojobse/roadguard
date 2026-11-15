@@ -75,7 +75,7 @@ knowledge/            Contexto, decisiones, reparto y seguimiento del proyecto
 ```bash
 python -m roadguard procesar --video datos/videos/MVI_39271.mp4 \
     --config configs/MVI_39271.yaml --salida salidas/MVI_39271 \
-    [--pesos yolov8n.pt] [--max-cuadros N] [--sin-video] [--dispositivo cpu|cuda|mps]
+    [--pesos yolov8n.pt] [--max-cuadros N] [--sin-video] [--tracks] [--dispositivo cpu|cuda|mps]
 ```
 
 Con `pip install -e .` tambien queda el comando `roadguard`. En el directorio
@@ -85,7 +85,10 @@ vehiculo, regla, intervalo, vehiculo relacionado, aporte y las variables y
 umbrales aplanados) y `resumen.json` (metadatos de la corrida, SHA-256 y
 parametros de la configuracion, eventos por regla y un resumen por
 vehiculo). Al terminar imprime cuadros procesados, FPS de procesamiento y el
-conteo de eventos por regla.
+conteo de eventos por regla. Con `--tracks` escribe ademas `tracks.csv` (cuadro,
+id, clase, caja, carril y confianza), que es lo que lee `scripts/medir_mvi.py`
+para medir mAP@0.5 e IDF1 contra el XML de UA-DETRAC. Los datos se bajan con
+`scripts/bajar_ua_detrac.py` (ver el PRD de datos y evaluacion, seccion 7).
 
 Por cada cuadro el pipeline hace: leer -> detectar -> seguir -> proyectar al
 camino -> carril y estado cinematico -> relaciones (THW/TTC) -> reglas y
