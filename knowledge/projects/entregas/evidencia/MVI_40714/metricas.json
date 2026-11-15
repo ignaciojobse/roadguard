@@ -1,0 +1,124 @@
+{
+  "secuencia": "MVI_40714",
+  "corrida": "salidas/MVI_40714",
+  "xml": "datos/ua-detrac/MVI_40714/MVI_40714.xml",
+  "configuracion": "configs/MVI_40714.yaml",
+  "version_modelo": "ultralytics 8.4.214 / yolov8n.pt",
+  "n_cuadros": 1180,
+  "fps_video": 25.0,
+  "fps_procesamiento": 61.61,
+  "fps_por_etapa": {
+    "deteccion": 81.5,
+    "seguimiento": 2568.6,
+    "geometria": 4074.9,
+    "reglas": 19906.1,
+    "salidas": 341.9
+  },
+  "eventos_por_regla": {
+    "cercania_peligrosa": 0,
+    "zigzag": 0,
+    "corte_de_carril": 0
+  },
+  "iou_min": 0.5,
+  "mapeo_clases": {
+    "car": "automovil",
+    "van": "automovil",
+    "bus": "bus",
+    "others": "camion"
+  },
+  "regiones_ignoradas": {
+    "n": 3,
+    "cajas_referencia_descartadas": 186,
+    "cajas_detectadas_descartadas": 0
+  },
+  "cuadro_completo": {
+    "map50_sin_clase": {
+      "ap": 0.3195,
+      "n_referencia": 33749,
+      "n_detecciones": 10823,
+      "precision_final": 0.9967,
+      "recobrado_final": 0.3196
+    },
+    "ap50_por_clase": {
+      "automovil": {
+        "ap": 0.387,
+        "n_referencia": 26099,
+        "n_detecciones": 10152,
+        "precision_final": 0.9955,
+        "recobrado_final": 0.3872
+      },
+      "bus": {
+        "ap": 0.1009,
+        "n_referencia": 6616,
+        "n_detecciones": 671,
+        "precision_final": 0.9955,
+        "recobrado_final": 0.101
+      },
+      "camion": {
+        "ap": 0.0,
+        "n_referencia": 1034,
+        "n_detecciones": 0,
+        "precision_final": null,
+        "recobrado_final": null
+      }
+    },
+    "seguimiento": {
+      "idf1": 0.4837,
+      "idtp": 10779,
+      "idfp": 44,
+      "idfn": 22970,
+      "mota": 0.3185,
+      "falsos_negativos": 22962,
+      "falsos_positivos": 36,
+      "cambios_id": 2,
+      "n_trayectorias_referencia": 62,
+      "n_trayectorias_detectadas": 32
+    }
+  },
+  "region_interes": {
+    "descripcion": "referencia restringida a cajas cuyo punto de calzada cae en region_interes del YAML",
+    "n_referencia_fuera_de_region": 15734,
+    "map50_sin_clase": {
+      "ap": 0.5918,
+      "n_referencia": 18015,
+      "n_detecciones": 10823,
+      "precision_final": 0.9913,
+      "recobrado_final": 0.5956
+    },
+    "ap50_por_clase": {
+      "automovil": {
+        "ap": 0.5862,
+        "n_referencia": 17191,
+        "n_detecciones": 10152,
+        "precision_final": 0.9939,
+        "recobrado_final": 0.5869
+      },
+      "bus": {
+        "ap": 0.7904,
+        "n_referencia": 754,
+        "n_detecciones": 671,
+        "precision_final": 0.9329,
+        "recobrado_final": 0.8302
+      },
+      "camion": {
+        "ap": 0.0,
+        "n_referencia": 70,
+        "n_detecciones": 0,
+        "precision_final": null,
+        "recobrado_final": null
+      }
+    },
+    "seguimiento": {
+      "idf1": 0.7441,
+      "idtp": 10729,
+      "idfp": 94,
+      "idfn": 7286,
+      "mota": 0.5903,
+      "falsos_negativos": 7286,
+      "falsos_positivos": 94,
+      "cambios_id": 0,
+      "n_trayectorias_referencia": 30,
+      "n_trayectorias_detectadas": 32
+    }
+  }
+}

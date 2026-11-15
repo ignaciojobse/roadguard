@@ -57,6 +57,8 @@ El video debe ser un archivo MP4 de una cámara fija, con una tasa de cuadros (F
 
 La secuencia de referencia del proyecto es `MVI_39271` del conjunto UA-DETRAC: cámara fija, día soleado, resolución 960 por 540, 25 cuadros por segundo, con el tráfico acercándose a la cámara de derecha a izquierda. UA-DETRAC entrega las secuencias como carpetas de imágenes JPG; para usarlas aquí hay que convertirlas a MP4 conservando la tasa de cuadros, por ejemplo con `ffmpeg -framerate 25 -i img%05d.jpg -c:v libx264 -pix_fmt yuv420p MVI_39271.mp4`.
 
+El repositorio trae la configuración de las tres secuencias de la demo: `configs/MVI_39271.yaml` y `configs/MVI_40714.yaml` (cola densa, nublado) están calibradas, y `configs/MVI_40742.yaml` (anochecer) corre sin calibración, a propósito, como ejemplo del modo degradado de la sección 5.4.
+
 ### 4.2 El archivo YAML, campo por campo
 
 La plantilla vacía está en `configs/camara_ejemplo.yaml` y la configuración completa de la cámara de referencia en `configs/MVI_39271.yaml`. El archivo tiene nueve claves de primer nivel; cualquier otra clave se rechaza con un mensaje que la nombra. Las coordenadas de imagen van en píxeles, con el origen en la esquina superior izquierda, x hacia la derecha e y hacia abajo. Las coordenadas del camino van en metros, con x en el sentido de avance del tráfico e y lateral.
@@ -209,11 +211,19 @@ El procedimiento es el siguiente. Primero, elija dos líneas discontinuas vecina
 python scripts/calibrar_ua_detrac.py
 ```
 
-El script escribe `configs/<nombre>.yaml` con un encabezado que informa el error de reproyección (RMSE y máximo), el desfase estimado y la focal. Si hay cuadros de la secuencia en `datos/ua-detrac/cuadros/<nombre>/`, además guarda una imagen de verificación con la rejilla métrica, los carriles y los puntos usados; mírela antes de usar la configuración, porque un punto mal anotado se nota de inmediato como una rejilla torcida. El script rechaza una sola línea y líneas con menos de dos puntos.
+El script escribe `configs/<nombre>.yaml` con un encabezado que informa el error de reproyección (RMSE y máximo), el desfase estimado y la focal. Si hay cuadros de la secuencia en `datos/ua-detrac/cuadros/<nombre>/`, además guarda una imagen de verificación con la rejilla métrica, los carriles y los puntos usados; mírela antes de usar la configuración, porque un punto mal anotado se nota de inmediato como una rejilla torcida. Para elegir el cuadro de esa imagen, agregue a la entrada la clave `verificacion` con el nombre de un JPG de `datos/ua-detrac/<nombre>/`. El script rechaza una sola línea y líneas con menos de dos puntos.
+
+No siempre hay dos trazos completos en cada línea. En `MVI_40714` solo se ve un trazo y el inicio del siguiente en la línea discontinua, y la línea vecina es continua. La entrada se escribe igual, con dos diferencias. La primera es la clave `posiciones`, que da la posición en metros de cada punto en lugar de suponer dos trazos completos (allí, `[0.0, 6.0, 15.0]`: inicio y fin del trazo, e inicio del siguiente). La segunda es que los puntos de la línea continua se toman en las mismas filas de la imagen que los de la discontinua. Con una cámara sin giro, cada fila de la imagen corta las dos líneas a la misma altura del camino, y la calibración lo comprueba: el desfase que estima debe salir cercano a cero (0,15 m en `MVI_40714`). Si sale grande, la cámara está girada y conviene usar dos líneas discontinuas.
+
+Para saber cuál norma de trazo aplica sin medir en terreno, prolongue las dos líneas hasta su punto de fuga. Con él, la razón trazo/hueco en metros se puede calcular desde la imagen, y es 0,67 en la norma de 6 y 9 metros y 0,5 en la de 2 y 4 metros.
+
+Con tráfico denso las líneas quedan tapadas en casi todos los cuadros, y la mediana de la secuencia completa no las limpia si la cola está detenida. En las secuencias de UA-DETRAC sirve calcular la mediana por píxel solo con los cuadros en que ese píxel queda fuera de las cajas anotadas en el XML. Así se armaron los fondos de `MVI_40714` y `MVI_40742`.
 
 ### 5.4 Qué pasa si no hay calibración
 
 Si deja `puntos_imagen` y `puntos_camino` vacíos, la configuración se acepta y el sistema sigue funcionando en modo degradado. Detecta y sigue vehículos, les asigna carril y puede evaluar zigzag, porque esa regla solo usa cambios de carril. Pero distancia, velocidad, THW y TTC quedan como «no disponibles», y las reglas de cercanía y corte de carril, que dependen de ellas, se suspenden sin generar eventos. En ese caso el sistema lo avisa de tres maneras: con el mensaje «SIN CALIBRACION» en la consola al iniciar, con un rótulo permanente en el video anotado y con la misma advertencia en `resumen.json`, donde `calibrado` queda en `false`. Lo mismo ocurre si los puntos están pero la homografía resulta degenerada o deja puntos a ambos lados del horizonte.
+
+`configs/MVI_40742.yaml` es un ejemplo real de este modo. En esa calzada las dos líneas que se ven completas son continuas y ninguna discontinua muestra trazos repetibles, así que no hay escala en metros que tomar del pavimento. La región y los carriles se trazaron igual, en píxeles, como rayos que salen del punto de fuga de las líneas. En el script de calibración, esa entrada lleva las claves `fuga` y `rayos` en lugar de `lineas`, y el YAML resultante no tiene sección `homografia`.
 
 ## 6. Ejecutar y leer las salidas
 
