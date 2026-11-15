@@ -12,8 +12,9 @@ El motor de reglas se inyecta. Debe cumplir la interfaz `MotorReglas`:
 
 donde `eventos` son los eventos CONFIRMADOS y cerrados en ese cuadro (cada
 uno se entrega una sola vez; van al CSV) y `puntajes` es el puntaje RF10/RF11
-vigente por vehiculo (va al video). `MotorCercania` es el motor por defecto
-mientras `m4_reglas/motor.py` no exista: envuelve `DetectorCercania` (RF7) y
+vigente por vehiculo (va al video). El motor por defecto es `m4_reglas.motor.MotorReglas`
+(RF7 a RF11). `MotorCercania` queda como motor minimo de respaldo y para
+pruebas: envuelve `DetectorCercania` (RF7) y
 acumula el puntaje con los umbrales RF10/RF11 de `tipos.Umbrales`.
 
 Sin calibracion (sin homografia) el pipeline no se detiene: se mantienen
@@ -41,6 +42,7 @@ from roadguard.m3_geometria.homografia import ProyectorCamino
 from roadguard.m3_geometria.relaciones import calcular_relaciones
 from roadguard.m3_geometria.trayectorias import HistorialCausal
 from roadguard.m4_reglas.cercania import DetectorCercania
+from roadguard.m4_reglas.motor import MotorReglas as MotorReglasM4
 from roadguard.m5_salidas.dibujo import anotar_cuadro
 from roadguard.m5_salidas.escritor import EscritorVideo
 from roadguard.m5_salidas.exportar import escribir_eventos_csv, escribir_resumen_json
@@ -194,7 +196,7 @@ class Pipeline:
     ) -> None:
         self.cfg = cfg
         self.detector = detector
-        self.motor: MotorReglas = motor if motor is not None else MotorCercania(cfg.umbrales)
+        self.motor: MotorReglas = motor if motor is not None else MotorReglasM4(cfg.umbrales)
         self.version_modelo = version_modelo or getattr(
             detector, "version_modelo", type(detector).__name__
         )
