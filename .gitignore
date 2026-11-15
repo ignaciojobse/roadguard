@@ -18,3 +18,7 @@ datos/ua-detrac/*
 
 # Artefactos de empaquetado
 *.egg-info/
+
+# Salidas de corridas: no se versionan; la evidencia elegida se copia a
+# knowledge/projects/entregas/evidencia/
+salidas/
