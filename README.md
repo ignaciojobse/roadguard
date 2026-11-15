@@ -16,9 +16,10 @@ son configurables y no se presentan como limites legales.
 ## Alcance de esta rama
 
 Esta rama contiene la base compartida, los modulos de percepcion y geometria,
-la referencia M6 y avances parciales de M4 (RF7) y M5. El motor de reglas
-completo, la visualizacion y exportacion completa y la integracion end-to-end
-aun no estan disponibles. El reparto y el estado viven en `knowledge/roadmap/`.
+la referencia M6, avances parciales de M4 (RF7) y M5, y la integracion
+end-to-end con CLI (`pipeline.py`, `cli.py`). El motor de reglas completo
+(RF8, RF9) aun no esta disponible: el pipeline corre con un motor minimo de
+cercania y puntaje. El reparto y el estado viven en `knowledge/roadmap/`.
 
 | Modulo | Estado en esta rama | Responsable |
 |---|---|---|
@@ -27,9 +28,10 @@ aun no estan disponibles. El reparto y el estado viven en `knowledge/roadmap/`.
 | M2 Deteccion y seguimiento | Implementado | Ignacio Jobse |
 | M3 Geometria vial y trayectorias | Implementado | Giancarlos Ricci |
 | M4 Motor de reglas y riesgo | Parcial: cercania (RF7) | Francisco Castillo |
-| M5 Visualizacion y exportacion | Parcial: cajas, ID, carril y MP4 anotado | Francisco Castillo |
+| M5 Visualizacion y exportacion | Cajas, ID, carril, color y puntaje por riesgo, MP4 anotado, CSV de eventos y resumen JSON | Francisco Castillo |
 | M6 Evaluacion y diagnostico | Parcial: referencia NGSIM y F1 de eventos | Francisco Zuniga |
 | Datos y seleccion de secuencias | Parcial: NGSIM listo, UA-DETRAC pendiente | Francisco Zuniga |
+| Integracion y CLI | Implementado: `Pipeline` + `python -m roadguard procesar`, con `MotorCercania` como motor por defecto | Francisco Zuniga |
 
 El contrato de datos de `tipos.py` se conserva completo, incluidas las
 estructuras que consumen los modulos posteriores (`Evento`, `PuntajeRiesgo`,
@@ -37,8 +39,8 @@ estructuras que consumen los modulos posteriores (`Evento`, `PuntajeRiesgo`,
 la interfaz contra la que se integraran M4, M5 y M6, y por eso se mantiene
 estable aunque su implementacion viva en otra rama.
 
-No hay CLI ni pipeline end-to-end en esta rama: los modulos se usan como
-biblioteca y se ejercitan desde las pruebas.
+Los modulos se usan como biblioteca y, desde esta rama, tambien encadenados
+por `roadguard.pipeline.Pipeline` y la CLI (ver «Uso»).
 
 ## Instalacion
 
@@ -53,11 +55,13 @@ pip install -e .
 src/roadguard/
   tipos.py            Contrato de datos compartido entre modulos
   poligonos.py        Utilidades geometricas de poligonos
+  pipeline.py         Integracion end-to-end: Pipeline y MotorCercania
+  cli.py, __main__.py Linea de comandos (python -m roadguard)
   m1_ingesta/         IC   Ingesta y configuracion        RF1, RF4
   m2_deteccion/       DTS  Deteccion y seguimiento        RF2, RF3
   m3_geometria/       GVT  Geometria vial y trayectorias  RF4, RF5, RF6
   m4_reglas/          Motor parcial: cercania (RF7)
-  m5_salidas/         VE   Video anotado (parcial)              RF11, RF12
+  m5_salidas/         VE   Video anotado, CSV y JSON       RF11, RF12
   m6_evaluacion/      ED   Datos de referencia y metricas de eventos
 tests/                Pruebas unitarias (pytest)
 configs/              Configuraciones de camara
@@ -65,6 +69,39 @@ datos/                Videos y anotaciones (no versionados)
 docs/                 Plan de implementacion
 knowledge/            Contexto, decisiones, reparto y seguimiento del proyecto
 ```
+
+## Uso
+
+```bash
+python -m roadguard procesar --video datos/videos/MVI_39271.mp4 \
+    --config configs/MVI_39271.yaml --salida salidas/MVI_39271 \
+    [--pesos yolov8n.pt] [--max-cuadros N] [--sin-video] [--dispositivo cpu|cuda|mps]
+```
+
+Con `pip install -e .` tambien queda el comando `roadguard`. En el directorio
+de salida se escriben `anotado.mp4` (cajas, ID, clase, carril, puntaje y
+color por banda de riesgo), `eventos.csv` (un evento confirmado por fila:
+vehiculo, regla, intervalo, vehiculo relacionado, aporte y las variables y
+umbrales aplanados) y `resumen.json` (metadatos de la corrida, SHA-256 y
+parametros de la configuracion, eventos por regla y un resumen por
+vehiculo). Al terminar imprime cuadros procesados, FPS de procesamiento y el
+conteo de eventos por regla.
+
+Por cada cuadro el pipeline hace: leer -> detectar -> seguir -> proyectar al
+camino -> carril y estado cinematico -> relaciones (THW/TTC) -> reglas y
+puntaje -> anotar -> escribir. Sin calibracion no se detiene: mantiene
+cajas, ID, carril y una advertencia visible en el video; distancia, THW y
+TTC quedan no disponibles y no se generan eventos de cercania (Paso 5).
+
+El motor de reglas se inyecta en `Pipeline(cfg, detector, motor=...)` y
+debe exponer `actualizar(t, estados: dict[int, EstadoCinematico],
+relaciones: list[Relacion], cambios: list[CambioCarril]) ->
+tuple[list[Evento], dict[int, PuntajeRiesgo]]` y `finalizar() ->
+list[Evento]`. Los eventos devueltos son los confirmados y cerrados en ese
+cuadro (van al CSV); los puntajes son los vigentes por vehiculo (van al
+video). Mientras `m4_reglas/motor.py` no exista, el motor por defecto es
+`MotorCercania`: RF7 mas puntaje RF10 (el aporte vale mientras el tramo esta
+activo y caduca `vigencia_aporte` segundos despues) y bandas RF11.
 
 ## Uso como biblioteca
 
