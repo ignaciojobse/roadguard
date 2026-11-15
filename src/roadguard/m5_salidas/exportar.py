@@ -15,7 +15,7 @@ import os
 from enum import Enum
 from typing import Any, Iterable, Optional
 
-from roadguard.tipos import Evento, ResumenEjecucion, ResumenVehiculo
+from roadguard.tipos import EstadoCinematico, Evento, ResumenEjecucion, ResumenVehiculo, Track
 
 COLUMNAS_FIJAS: tuple[str, ...] = (
     "id_vehiculo",
@@ -27,6 +27,9 @@ COLUMNAS_FIJAS: tuple[str, ...] = (
 )
 PREFIJO_VARIABLE = "variable_"
 PREFIJO_UMBRAL = "umbral_"
+COLUMNAS_TRACKS: tuple[str, ...] = (
+    "cuadro", "id", "clase", "x1", "y1", "x2", "y2", "carril", "confianza"
+)
 
 
 def columnas_eventos(eventos: Iterable[Evento]) -> list[str]:
@@ -100,6 +103,46 @@ def escribir_resumen_json(
         json.dump(documento, f, ensure_ascii=False, indent=2)
         f.write("\n")
     return documento
+
+
+class EscritorTracks:
+    """Escribe `tracks.csv`: una fila por vehiculo y cuadro (salida opcional).
+
+    Columnas: cuadro, id, clase, x1, y1, x2, y2 (pixeles), carril (vacio si
+    no se asigno) y confianza de la deteccion. Sirve para medir mAP e IDF1
+    contra una referencia externa sin volver a correr el detector.
+    """
+
+    def __init__(self, ruta: str) -> None:
+        _preparar_directorio(ruta)
+        self.ruta = ruta
+        self._f = open(ruta, "w", encoding="utf-8", newline="")
+        self._escritor = csv.DictWriter(self._f, fieldnames=list(COLUMNAS_TRACKS))
+        self._escritor.writeheader()
+        self.n_filas = 0
+
+    def escribir(self, tracks: Iterable[Track], estados: Iterable[EstadoCinematico]) -> None:
+        carriles = {e.id_vehiculo: e.carril for e in estados}
+        for tr in tracks:
+            c = tr.caja
+            self._escritor.writerow(
+                {
+                    "cuadro": tr.cuadro,
+                    "id": tr.id_vehiculo,
+                    "clase": tr.clase,
+                    "x1": round(c.x1, 1),
+                    "y1": round(c.y1, 1),
+                    "x2": round(c.x2, 1),
+                    "y2": round(c.y2, 1),
+                    "carril": _celda(carriles.get(tr.id_vehiculo)),
+                    "confianza": round(tr.confianza, 4),
+                }
+            )
+            self.n_filas += 1
+
+    def cerrar(self) -> None:
+        if not self._f.closed:
+            self._f.close()
 
 
 def a_json(valor: Any) -> Any:

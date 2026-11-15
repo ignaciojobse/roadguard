@@ -23,7 +23,7 @@ import pytest
 from roadguard import cli
 from roadguard.m1_ingesta.config import configuracion_desde_dict
 from roadguard.m1_ingesta.video import iterar_cuadros, leer_metadatos
-from roadguard.m5_salidas.exportar import COLUMNAS_FIJAS
+from roadguard.m5_salidas.exportar import COLUMNAS_FIJAS, COLUMNAS_TRACKS
 from roadguard.pipeline import MotorCercania, Pipeline, nivel_por_puntaje
 from roadguard.tipos import Caja, Deteccion, NivelRiesgo, Umbrales
 
@@ -256,3 +256,40 @@ def test_cli_rechaza_config_inexistente(tmp_path, capsys) -> None:
     )
     assert codigo == 1
     assert "Error" in capsys.readouterr().err
+
+
+def test_cli_tracks_escribe_una_fila_por_vehiculo_y_cuadro(tmp_path) -> None:
+    video = _video(tmp_path, n_cuadros=30)
+    ruta_cfg = _escribir_yaml(tmp_path, _config(calibrada=True))
+    salida = str(tmp_path / "tracks")
+    codigo = cli.main(
+        ["procesar", "--video", video, "--config", ruta_cfg, "--salida", salida,
+         "--sin-video", "--tracks"],
+        fabrica_detector=lambda cfg, args: DetectorFalso(),
+    )
+    assert codigo == 0
+    ruta = os.path.join(salida, "tracks.csv")
+    assert os.path.isfile(ruta)
+    with open(ruta, encoding="utf-8", newline="") as f:
+        lector = csv.DictReader(f)
+        filas = list(lector)
+        assert lector.fieldnames == list(COLUMNAS_TRACKS)
+    assert filas, "el detector falso ve dos vehiculos por cuadro"
+    cuadros = {int(f["cuadro"]) for f in filas}
+    assert min(cuadros) == 0 and max(cuadros) == 29
+    # Un ID aparece a lo mas una vez por cuadro.
+    pares = [(f["cuadro"], f["id"]) for f in filas]
+    assert len(pares) == len(set(pares))
+    for f in filas:
+        assert f["clase"] == "automovil"
+        assert float(f["x2"]) > float(f["x1"]) and float(f["y2"]) > float(f["y1"])
+        assert f["carril"] == "" or int(f["carril"]) >= 0
+        assert 0.0 <= float(f["confianza"]) <= 1.0
+
+
+def test_pipeline_sin_tracks_no_escribe_el_archivo(tmp_path) -> None:
+    video = _video(tmp_path, n_cuadros=5)
+    cfg = configuracion_desde_dict(_config(calibrada=False))
+    resultado = Pipeline(cfg, DetectorFalso()).ejecutar(video, str(tmp_path / "s"), escribir_video=False)
+    assert resultado.ruta_tracks is None
+    assert not os.path.exists(tmp_path / "s" / "tracks.csv")

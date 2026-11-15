@@ -45,7 +45,11 @@ from roadguard.m4_reglas.cercania import DetectorCercania
 from roadguard.m4_reglas.motor import MotorReglas as MotorReglasM4
 from roadguard.m5_salidas.dibujo import anotar_cuadro
 from roadguard.m5_salidas.escritor import EscritorVideo
-from roadguard.m5_salidas.exportar import escribir_eventos_csv, escribir_resumen_json
+from roadguard.m5_salidas.exportar import (
+    EscritorTracks,
+    escribir_eventos_csv,
+    escribir_resumen_json,
+)
 from roadguard.tipos import (
     CambioCarril,
     Configuracion,
@@ -66,6 +70,7 @@ from roadguard.tipos import (
 NOMBRE_VIDEO = "anotado.mp4"
 NOMBRE_EVENTOS = "eventos.csv"
 NOMBRE_RESUMEN = "resumen.json"
+NOMBRE_TRACKS = "tracks.csv"
 
 
 class Detector(Protocol):
@@ -177,6 +182,7 @@ class ResultadoPipeline:
     ruta_video: Optional[str]
     ruta_eventos: str
     ruta_resumen: str
+    ruta_tracks: Optional[str] = None
 
 
 class Pipeline:
@@ -209,13 +215,19 @@ class Pipeline:
         dir_salida: str,
         max_cuadros: Optional[int] = None,
         escribir_video: bool = True,
+        escribir_tracks: bool = False,
     ) -> ResultadoPipeline:
-        """Procesa el video completo (o `max_cuadros`) y escribe las salidas."""
+        """Procesa el video completo (o `max_cuadros`) y escribe las salidas.
+
+        Con `escribir_tracks` se agrega `tracks.csv` (una fila por vehiculo y
+        cuadro) para evaluar deteccion y seguimiento contra una referencia.
+        """
         metadatos = leer_metadatos(ruta_video)
         os.makedirs(dir_salida, exist_ok=True)
         ruta_anotado = os.path.join(dir_salida, NOMBRE_VIDEO) if escribir_video else None
         ruta_eventos = os.path.join(dir_salida, NOMBRE_EVENTOS)
         ruta_resumen = os.path.join(dir_salida, NOMBRE_RESUMEN)
+        ruta_tracks = os.path.join(dir_salida, NOMBRE_TRACKS) if escribir_tracks else None
 
         advertencias = validar_consistencia(self.cfg)
         if not self.proyector.disponible and self.proyector.motivo_no_disponible:
@@ -235,6 +247,7 @@ class Pipeline:
         n_cuadros = 0
         completada = False
         escritor = EscritorVideo.desde_metadatos(ruta_anotado, metadatos) if ruta_anotado else None
+        escritor_tracks = EscritorTracks(ruta_tracks) if ruta_tracks else None
         inicio = time.perf_counter()
         try:
             for cuadro, t, imagen in iterar_cuadros(ruta_video):
@@ -245,6 +258,8 @@ class Pipeline:
                 )
                 eventos.extend(cerrados)
                 self._acumular(acumulados, tracks, puntajes)
+                if escritor_tracks is not None:
+                    escritor_tracks.escribir(tracks, estados)
                 if escritor is not None:
                     t0 = time.perf_counter()
                     anotado = anotar_cuadro(
@@ -258,6 +273,8 @@ class Pipeline:
         finally:
             if escritor is not None:
                 escritor.cerrar()
+            if escritor_tracks is not None:
+                escritor_tracks.cerrar()
         duracion = time.perf_counter() - inicio
 
         for ev in eventos:
@@ -304,7 +321,9 @@ class Pipeline:
         )
         escribir_eventos_csv(ruta_eventos, eventos)
         escribir_resumen_json(ruta_resumen, resumen, vehiculos)
-        return ResultadoPipeline(resumen, vehiculos, eventos, ruta_anotado, ruta_eventos, ruta_resumen)
+        return ResultadoPipeline(
+            resumen, vehiculos, eventos, ruta_anotado, ruta_eventos, ruta_resumen, ruta_tracks
+        )
 
     def _procesar_cuadro(
         self,
