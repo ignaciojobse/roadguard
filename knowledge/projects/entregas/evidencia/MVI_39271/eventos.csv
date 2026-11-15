@@ -1,0 +1,9 @@
+id_vehiculo,regla,t_inicio,t_fin,id_relacionado,aporte_puntaje,variable_carril_destino,variable_carril_final,variable_carril_inicial,variable_carril_origen,variable_distancia,variable_duracion_cruces,variable_n_cambios,variable_t_confirmacion,variable_t_cruce,variable_t_observacion,variable_t_primer_cruce,variable_t_ultimo_cruce,variable_thw,variable_ttc,variable_velocidad,umbral_cercania_persistencia,umbral_cercania_thw_max,umbral_cercania_velocidad_min,umbral_corte_thw_max,umbral_corte_ttc_max,umbral_corte_ventana_post_cambio,umbral_zigzag_cambios_min,umbral_zigzag_ventana
+4,cercania_peligrosa,8.08,10.28,3,40,,,,,7.743998536268705,,,10.08,,10.28,,,0.45799542076538463,2.2482745870595124,16.90846280368312,2.0,1.5,5.0,,,,,
+12,cercania_peligrosa,19.44,21.84,11,40,,,,,10.644748382111747,,,21.44,,21.84,,,0.7523760942287793,3.16651272497419,14.148174647977235,2.0,1.5,5.0,,,,,
+26,cercania_peligrosa,34.28,37.8,25,40,,,,,10.363384396502646,,,36.28,,37.8,,,1.31744271713127,,7.866288425100488,2.0,1.5,5.0,,,,,
+37,cercania_peligrosa,42.92,45.24,36,40,,,,,8.382988743005402,,,44.92,,45.24,,,0.951047871665468,10.547706319163966,8.814476108679129,2.0,1.5,5.0,,,,,
+40,cercania_peligrosa,43.28,45.28,39,40,,,,,12.009985254642956,,,45.28,,45.28,,,1.3538302232381285,15.202020046501996,8.871116221587329,2.0,1.5,5.0,,,,,
+32,corte_de_carril,44.32,44.52,39,50,1.0,,,2.0,7.431808352979155,,,46.52,44.32,44.52,,,0.8482597600761258,2.108918331712486,,,,,1.5,3.0,2.0,,
+32,zigzag,44.32,49.4,,35,,2.0,2.0,,,3.9200000000000017,2.0,49.4,,,44.32,48.24,,,,,,,,,,2.0,10.0
+48,zigzag,53.32,58.6,,35,,0.0,2.0,,,2.6400000000000006,2.0,58.6,,,53.32,55.96,,,,,,,,,,2.0,10.0

@@ -109,7 +109,7 @@ Se resumieron las 40 secuencias de prueba con `resumir_secuencia` y se miraron c
 | Densa | **MVI_40714** | cloudy · stable | 1.180 | 62 | 28,8 | La segunda más densa del conjunto de prueba. Cola de 4–5 carriles hacia la cámara, con buses articulados que tapan autos: caso de oclusión, IDF1 y vehículos detenidos |
 | Noche | **MVI_40742** | night · stable | 1.655 | 33 | 15,2 | Anochecer con luces encendidas, 3–4 carriles en el mismo sentido y muchos buses (9.957 de 25.140 cajas). Es el caso de baja luz y oclusión grande |
 
-Los cuadros de referencia quedaron en `datos/ua-detrac/referencia/<secuencia>.jpg` (960×540, fuera de git).
+Los cuadros de referencia quedaron en `datos/ua-detrac/referencia/<secuencia>.jpg` (960×540, fuera de git). **Desde el 2026-11-15 las tres secuencias están completas en local**, fuera de git: los JPG y el XML en `datos/ua-detrac/<secuencia>/` y el video en `datos/videos/<secuencia>.mp4` (960×540, 25 FPS, H.264 CRF 18, hecho con `ffmpeg` desde los JPG). MVI_39271 tiene 1.570 cuadros (el XML anota 1.566).
 
 **Límite que hay que declarar:** UA-DETRAC son avenidas urbanas de Beijing y Tianjin, no autopistas. Sirven para la propuesta («autopistas o vías multicarril»), pero las velocidades son urbanas. En MVI_40714 la cola está casi detenida, así que RF7 (v > 5 m/s) no se va a activar ahí: esa secuencia mide percepción, no reglas.
 
@@ -129,7 +129,7 @@ Valores de referencia en vías urbanas chinas, todos `Candidata a validar` hasta
 
 ### Cómo reproducir la descarga
 
-El sitio oficial (`detrac-db.rit.albany.edu`) redirige a la página del laboratorio y ya no sirve archivos. Se usó un espejo público en Hugging Face del zip original (`ShantyCam/ua-detrac`, `ua-detrac-orig.zip`, 9,9 GB, licencia CC BY-NC-SA del dataset). Es una copia de terceros, no oficial. El zip se leyó por rangos HTTP, sin bajarlo completo: las 40 XML de prueba (221 MB) y cuadros sueltos (4,4 MB).
+El sitio oficial (`detrac-db.rit.albany.edu`) redirige a la página del laboratorio y ya no sirve archivos. Se usó un espejo público en Hugging Face del zip original (`ShantyCam/ua-detrac`, `ua-detrac-orig.zip`, 9,9 GB, licencia CC BY-NC-SA del dataset). Es una copia de terceros, no oficial. El zip se leyó por rangos HTTP, sin bajarlo completo: primero las 40 XML de prueba (221 MB) y cuadros sueltos (4,4 MB), y el 15-nov las tres secuencias enteras con `python scripts/bajar_ua_detrac.py MVI_39271 MVI_40714 MVI_40742` (lee el directorio central del zip, agrupa las entradas contiguas en pedidos de 32 MB y escribe `datos/ua-detrac/<secuencia>/`; 401 MB en menos de 3 minutos). Dentro del zip las imágenes están en `DETRAC-Images/DETRAC-Images/<secuencia>/img00001.jpg` y los XML en `DETRAC-Test-Annotations-XML/`. Después `ffmpeg -framerate 25 -i datos/ua-detrac/<secuencia>/img%05d.jpg -s 960x540 -c:v libx264 -pix_fmt yuv420p -crf 18 datos/videos/<secuencia>.mp4`.
 
 ## 8. Milestones
 
@@ -146,7 +146,7 @@ El sitio oficial (`detrac-db.rit.albany.edu`) redirige a la página del laborato
 - [x] Los eventos de referencia respetan persistencia, cambio completo y ventana de corte (tests).
 - [x] El F1 es uno a uno y queda en None sin denominador (tests).
 - [x] Las 3 secuencias UA-DETRAC están elegidas y documentadas.
-- [ ] mAP@0.5, IDF1, cambios de ID y FPS están medidos.
+- [ ] mAP@0.5, IDF1, cambios de ID y FPS están medidos. _(1 de 3 al 15-nov: MVI_39271 con `scripts/medir_mvi.py`; ver el anexo de la bitácora 2.)_
 - [ ] El F1 de reglas está medido con M4 sobre trayectorias degradadas.
 
 ## 10. Riesgos y decisiones abiertas
