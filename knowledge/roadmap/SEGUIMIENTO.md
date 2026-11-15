@@ -32,4 +32,6 @@
 | Bajar las imágenes completas de las 3 secuencias y convertirlas a MP4 a 25 FPS | Z | pendiente | Posterior al 22-oct; las necesitan R para calibrar sobre video y J para integrar |
 | mAP@0.5 e IDF1 sobre UA-DETRAC | Z | pendiente | Secuencias elegidas; falta el parser completo por cuadro |
 | FPS a 720p en Colab T4 | J con Z | pendiente | Depende de la integración |
+| Bitácora 2 | C (borrador: Z) | en curso | [Bitácora 2](../projects/entregas/bitacora-2.md) redactada el 2026-11-15 desde el `git log`; filas de J, R y C marcadas `[revisar]`, anexo de métricas en `[pendiente: medir]` |
+| Video demo | Z | en curso | [Guion y plan de producción](../projects/entregas/video-demo.md); escena 4 con versión completa y parcial, se decide el 19-nov |
 | highD como segunda referencia | Z | bloqueado | No hay evidencia de acceso ([ADR-0001](../decisions/0001-ngsim-como-referencia-de-reglas.md)) |
