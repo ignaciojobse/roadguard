@@ -71,6 +71,8 @@ def procesar(args: argparse.Namespace, fabrica_detector: FabricaDetector) -> Res
 def imprimir_resumen(resultado: ResultadoPipeline, salida=None) -> None:
     salida = sys.stdout if salida is None else salida
     r = resultado.resumen
+    if not r.completada:
+        print("Corrida INCOMPLETA (interrumpida): las salidas cubren solo lo procesado", file=salida)
     print(f"Cuadros procesados: {r.n_cuadros_procesados}", file=salida)
     print(f"FPS de procesamiento: {r.fps_procesamiento:.2f} (video a {r.fps_video:.2f})", file=salida)
     print("Eventos por regla:", file=salida)
@@ -103,4 +105,5 @@ def main(
         print(f"Error: {e}", file=sys.stderr)
         return 1
     imprimir_resumen(resultado)
-    return 0
+    # 130 es el codigo convencional de una corrida cortada con Ctrl+C.
+    return 0 if resultado.resumen.completada else 130
