@@ -61,7 +61,7 @@ El plan por corte del ROADMAP fijaba cuatro fechas internas. Comparadas con el `
 | Corte | Fecha | Qué decía el plan | Qué muestra el repositorio |
 |---|---|---|---|
 | YAML calibrados | 26-oct | Las 3 secuencias con región, carriles y homografía (R) | 1 de 3, y entró el 21-oct, antes del plazo. Las otras dos no tienen YAML. Parte del bloqueo es de Z: los videos completos que iban a servir de fondo limpio nunca se bajaron |
-| Integración end-to-end | 1-nov | CLI con MP4 más YAML a tracks, estados y relaciones por cuadro, con M4 y M5 enchufados (J); M4 completo RF7 a RF10 (C); degradación y primer F1 (Z) | Nada de eso entró. M4 tiene solo RF7 (21-oct). No hay CLI. No hay degradación ni F1 medido |
+| Integración end-to-end | 1-nov | CLI con MP4 más YAML a tracks, estados y relaciones por cuadro, con M4 y M5 enchufados (J); M4 completo RF7 a RF10 (C); degradación y primer F1 (Z) | No entró en la fecha. Hasta el 14-nov M4 tenía solo RF7 (21-oct) y no había CLI; el 15-nov Z agregó RF8 a RF11 y el pipeline con CLI en la rama `prototipo-18nov` (dos semanas tarde). No hay degradación ni F1 medido |
 | Código congelado | 8-nov | M5 completo, umbrales ajustados, pipeline estable en T4 | No hubo nada que congelar: el último commit de código es del 21-oct. El código quedó «congelado» por falta de avance, no por decisión |
 | Mediciones de §2.5 | 12-nov | mAP, IDF1, F1 y FPS medidos | Ninguna medida. El anexo de métricas está vacío |
 
