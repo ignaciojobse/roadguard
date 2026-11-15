@@ -2,7 +2,7 @@
 
 > **El estado vivo del proyecto.** Único documento donde se escribe avance. Cada quien actualiza sus filas en el mismo PR que hace el trabajo. Estados: `pendiente` · `en curso` · `en revisión` · `hecho` · `bloqueado`.
 >
-> Última actualización: 2026-10-21.
+> Última actualización: 2026-11-15.
 
 ## Hacia el avance (21 y 22 de octubre)
 
@@ -25,9 +25,10 @@
 |---|---|---|---|
 | Base, M1, M2 y M3 | J | hecho | PR #1, 57 tests |
 | Calibrar YAML de las 3 secuencias | R | en curso | 1 de 3: `configs/MVI_39271.yaml` con `scripts/calibrar_ua_detrac.py` y `m3_geometria/calibracion.py` (RMSE 0,14 m; predice trazos lejanos a ~5 px; 60 km/h en un auto real). MVI_40714 y MVI_40742 tienen la calzada tapada en los 7 cuadros bajados: faltan más cuadros para armar un fondo sin vehículos. Plazo 26-oct |
-| M4 reglas RF7–RF9 y puntaje RF10–RF11 | C | en curso | Primer avance RF7 (`m4_reglas/cercania.py`): eventos streaming y demo sintetica `python scripts/demo_cercania.py`; faltan RF8–RF11 e integracion. |
+| M4 reglas RF7–RF9 y puntaje RF10–RF11 | C | en revisión | RF7 de C (`cercania.py`, PR #4). RF8 `zigzag.py`, RF9 `corte.py`, RF10/RF11 `puntaje.py` y la fachada `motor.py` los agregó Z el 2026-11-15 en la rama `prototipo-18nov`, 46 tests nuevos; C valida los supuestos anotados en los docstrings |
 | M5 MP4 anotado, CSV de eventos y JSON por vehículo | R | en curso | Primera parte en `main` (`m5_salidas/`): cajas, ID, clase, carril, advertencia sin calibración y escritor MP4, 15 tests. Faltan colores de riesgo, alertas, CSV y JSON, que dependen de M4 |
-| Integración y CLI | J | pendiente | — |
+| Integración y CLI | J | en revisión | Z armó `pipeline.py`, `cli.py` y `m5_salidas/exportar.py` el 2026-11-15 (rama `prototipo-18nov`): `python -m roadguard procesar` escribe `anotado.mp4`, `eventos.csv` y `resumen.json`; corrida real sobre clip sintético a 23 FPS en CPU. Falta correr sobre MVI_39271 real |
+| Manual de uso | R | en revisión | Borrador completo de Z: [manual](../projects/entregas/manual-de-uso.md) con DOCX y PDF; R revisa calibración y YAML |
 | Degradación de trayectorias y F1 de reglas | Z | pendiente | Depende de M4 |
 | Bajar las imágenes completas de las 3 secuencias y convertirlas a MP4 a 25 FPS | Z | pendiente | Posterior al 22-oct; las necesitan R para calibrar sobre video y J para integrar |
 | mAP@0.5 e IDF1 sobre UA-DETRAC | Z | pendiente | Secuencias elegidas; falta el parser completo por cuadro |

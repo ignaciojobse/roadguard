@@ -1,7 +1,7 @@
 # Manual de uso del prototipo RoadGuard
 
 <!-- Nota interna, no se exporta.
-Entregable del ramo para el 2026-11-18 (5 % de la nota). Fuente en Markdown; se exporta con exportar_entregable.py. Los comentarios «verificar con la CLI final» marcan lo que depende del contrato de la CLI que se escribe en paralelo (rama de J). Antes de entregar: correr la CLI una vez sobre MVI_39271 y borrar esas marcas.
+Entregable del ramo para el 2026-11-18 (5 % de la nota). Fuente en Markdown; se exporta con exportar_entregable.py. Contrato de la CLI verificado el 2026-11-15 contra la rama prototipo-18nov (corrida real de `python -m roadguard procesar`).
 -->
 
 > RoadGuard es un prototipo de apoyo a la revisión humana de video de tránsito. Este manual explica cómo instalarlo, preparar un video con su configuración, ejecutarlo y leer lo que produce, sin necesidad de hablar con el equipo. Proyecto TEL-328 Procesamiento Digital de Imágenes, UTFSM, 2026.
@@ -219,8 +219,6 @@ Si deja `puntos_imagen` y `puntos_camino` vacíos, la configuración se acepta y
 
 ### 6.1 El comando
 
-<!-- verificar con la CLI final: nombre del subcomando, opciones y valores por defecto. -->
-
 Con el paquete instalado, la ejecución es un solo comando desde cualquier carpeta. Los tres argumentos obligatorios son el video, la configuración y la carpeta de salida, que se crea si no existe.
 
 ```bash
@@ -247,17 +245,13 @@ Antes de procesar el primer cuadro, el sistema valida el video y la configuraci�
 
 ### 6.2 El video anotado
 
-<!-- verificar con la CLI final: posición de los rótulos y formato exacto de la etiqueta. -->
-
-`anotado.mp4` es una copia del video de entrada, con el mismo tamaño y los mismos FPS, de modo que el cuadro n del anotado ocurre en el mismo instante que el cuadro n del original. Sobre la imagen se dibujan los límites de carril de la configuración y, para cada vehículo seguido, su caja con una etiqueta que lleva el identificador, la clase, el carril asignado y el puntaje de riesgo vigente. El color de la caja sigue la banda del puntaje: verde entre 0 y 29, amarillo entre 30 y 59 y rojo entre 60 y 100. El número siempre acompaña al color, para no depender de él. Si la cámara no está calibrada, en la parte superior hay un rótulo permanente que lo indica.
+`anotado.mp4` es una copia del video de entrada, con el mismo tamaño y los mismos FPS, de modo que el cuadro n del anotado ocurre en el mismo instante que el cuadro n del original. Sobre la imagen se dibujan los límites de carril de la configuración y, para cada vehículo seguido, su caja con una etiqueta sobre el borde superior que lleva el identificador, la clase, el carril asignado y el puntaje de riesgo vigente con su banda, por ejemplo `ID 7 car carril 2 riesgo 40 amarillo` (sin tildes, porque la fuente de OpenCV no las dibuja). El color de la caja sigue la banda del puntaje: verde entre 0 y 29, amarillo entre 30 y 59 y rojo entre 60 y 100. El número siempre acompaña al color, para no depender de él. Si la cámara no está calibrada, en la parte superior hay un rótulo permanente que lo indica.
 
 El identificador es el mismo durante toda la permanencia del vehículo en la escena, salvo que una oclusión larga lo haga perderse; en ese caso el vehículo reaparece con un identificador nuevo y en el CSV figura como otro vehículo (sección 9).
 
 ### 6.3 Los eventos en CSV
 
-<!-- verificar con la CLI final: nombres exactos de las columnas de variables y umbrales, y el separador. -->
-
-`eventos.csv` tiene una fila por evento, es decir, por cada activación confirmada de una regla sobre un vehículo. Está pensado para abrirse en una planilla o con pandas y filtrarse por regla, por vehículo o por intervalo de tiempo. Las primeras seis columnas son fijas; las siguientes dependen de la regla.
+`eventos.csv` tiene una fila por evento, es decir, por cada activación confirmada de una regla sobre un vehículo. Está pensado para abrirse en una planilla o con pandas y filtrarse por regla, por vehículo o por intervalo de tiempo. Está separado por comas. Las primeras seis columnas son fijas; las siguientes dependen de la regla y llevan prefijo: `variable_` para las variables medidas y `umbral_` para los umbrales vigentes.
 
 | Columna | Contenido |
 |---|---|
@@ -267,14 +261,12 @@ El identificador es el mismo durante toda la permanencia del vehículo en la esc
 | `t_fin` | Última observación válida en que seguía cumpliéndose. En cercanía, un predecesor distinto o una observación perdida corta el tramo |
 | `id_relacionado` | El otro vehículo involucrado: el de adelante en cercanía, el que queda detrás tras el corte. Vacío en zigzag |
 | `aporte_puntaje` | Puntos que el evento suma al puntaje del vehículo mientras está vigente (40, 35 o 50 por defecto) |
-| Variables medidas | Una columna por variable que activó la regla, con su valor en el momento del evento: `velocidad` (m/s), `distancia` (m), `thw` (s), `ttc` (s), `t_confirmacion` (s) o el número de cambios de carril, según la regla. Vacía cuando no aplica o no está disponible |
-| Umbrales vigentes | Una columna por umbral que se usó para evaluar la regla (por ejemplo `cercania_thw_max`), con el valor que tenía en la configuración de esa corrida, para que el evento sea auditable sin volver al YAML |
+| `variable_*` | Una columna por variable que activó la regla, con su valor en el momento del evento: `velocidad` (m/s), `distancia` (m), `thw` (s), `ttc` (s), `t_confirmacion` (s) o el número de cambios de carril, según la regla. Vacía cuando no aplica o no está disponible |
+| `umbral_*` | Una columna por umbral que se usó para evaluar la regla (por ejemplo `umbral_cercania_thw_max`), con el valor que tenía en la configuración de esa corrida, para que el evento sea auditable sin volver al YAML |
 
 ### 6.4 El resumen en JSON
 
-<!-- verificar con la CLI final: nombres exactos de las claves y la estructura del bloque por vehículo. -->
-
-`resumen.json` es la evidencia de reproducibilidad de la corrida y la vista por vehículo. Tiene dos partes: un bloque de ejecución y una lista con un resumen por cada vehículo seguido.
+`resumen.json` es la evidencia de reproducibilidad de la corrida y la vista por vehículo. Tiene dos claves: `ejecucion`, un bloque con los datos de la corrida, y `vehiculos`, una lista con un resumen por cada vehículo seguido.
 
 | Campo | Contenido |
 |---|---|
@@ -289,6 +281,7 @@ El identificador es el mismo durante toda la permanencia del vehículo en la esc
 | `advertencias` | Lista de advertencias emitidas: sin calibración, región de área nula, menos de dos carriles |
 | `n_eventos` | Cantidad de eventos por regla en toda la corrida |
 | `parametros` | La configuración normalizada que se usó, incluidos los umbrales por defecto que no estaban escritos en el YAML |
+| `fps_por_etapa` | Cuadros por segundo de cada etapa (detección, seguimiento, geometría, reglas, salidas), para ubicar el cuello de botella |
 | `completada` | `false` si la corrida se interrumpió; las salidas parciales no deben compararse con otras |
 | Por vehículo: `id_vehiculo`, `clase` | Identificador y clase detectada |
 | Por vehículo: `t_primera_aparicion`, `t_ultima_aparicion` | Segundos de entrada y salida de la escena |
@@ -365,4 +358,4 @@ Por último, el sistema procesa un video completo y entrega resultados al final;
 - Formulario de propuesta TEL-328, 2026-09-11, §1.1, §1.2, §1.3, §2.5 y RF1 a RF12.
 - Código del repositorio al 2026-11-15: `m1_ingesta/config.py` y `video.py`, `m3_geometria/calibracion.py` y `homografia.py`, `m4_reglas/cercania.py`, `m5_salidas/`, `tipos.py`, `scripts/calibrar_ua_detrac.py`, `configs/MVI_39271.yaml`.
 - [Reglas de negocio](../../domain/REGLAS_NEGOCIO.md), [Glosario](../../domain/GLOSARIO.md) y [Marca](./marca/MARCA.md).
-- Contrato de la CLI `python -m roadguard procesar`, acordado con el equipo el 2026-11-15; lo marcado «verificar con la CLI final» se confirma al integrarla.
+- CLI `python -m roadguard procesar`, rama prototipo-18nov, verificada con una corrida real el 2026-11-15.
