@@ -189,7 +189,9 @@ class Pipeline:
     """Encadena M1 a M5 sobre un video y escribe las tres salidas (RF12).
 
     `detector` se inyecta para poder correr sin YOLO en las pruebas. `motor`
-    debe cumplir `MotorReglas`; por defecto es `MotorCercania`.
+    debe cumplir `MotorReglas`; por defecto es `m4_reglas.motor.MotorReglas`
+    (RF7 a RF11). Ante Ctrl+C la corrida se corta, pero las salidas se
+    escriben con lo procesado y `completada=False`.
     """
 
     def __init__(
@@ -250,26 +252,35 @@ class Pipeline:
         escritor_tracks = EscritorTracks(ruta_tracks) if ruta_tracks else None
         inicio = time.perf_counter()
         try:
-            for cuadro, t, imagen in iterar_cuadros(ruta_video):
-                if max_cuadros is not None and cuadro >= max_cuadros:
-                    break
-                tracks, estados, relaciones, cambios, puntajes, cerrados = self._procesar_cuadro(
-                    cuadro, t, imagen, seguidor, historial, cambios_carril, tiempos
-                )
-                eventos.extend(cerrados)
-                self._acumular(acumulados, tracks, puntajes)
-                if escritor_tracks is not None:
-                    escritor_tracks.escribir(tracks, estados)
-                if escritor is not None:
-                    t0 = time.perf_counter()
-                    anotado = anotar_cuadro(
-                        imagen, tracks, estados, self.cfg.carriles, rotulo, puntajes
+            try:
+                for cuadro, t, imagen in iterar_cuadros(ruta_video):
+                    if max_cuadros is not None and cuadro >= max_cuadros:
+                        break
+                    tracks, estados, relaciones, cambios, puntajes, cerrados = self._procesar_cuadro(
+                        cuadro, t, imagen, seguidor, historial, cambios_carril, tiempos
                     )
-                    escritor.escribir(anotado)
-                    tiempos["salidas"] += time.perf_counter() - t0
-                n_cuadros += 1
+                    eventos.extend(cerrados)
+                    self._acumular(acumulados, tracks, puntajes)
+                    if escritor_tracks is not None:
+                        escritor_tracks.escribir(tracks, estados)
+                    if escritor is not None:
+                        t0 = time.perf_counter()
+                        anotado = anotar_cuadro(
+                            imagen, tracks, estados, self.cfg.carriles, rotulo, puntajes
+                        )
+                        escritor.escribir(anotado)
+                        tiempos["salidas"] += time.perf_counter() - t0
+                    n_cuadros += 1
+                completada = True
+            except KeyboardInterrupt:
+                # Ctrl+C (por ejemplo, en la demo en vivo): se conserva lo
+                # procesado. Los eventos abiertos se cierran y las salidas se
+                # escriben igual, marcadas como corrida incompleta.
+                advertencias.append(
+                    f"Corrida interrumpida por el usuario tras {n_cuadros} cuadros; "
+                    "salidas parciales"
+                )
             eventos.extend(self.motor.finalizar())
-            completada = True
         finally:
             if escritor is not None:
                 escritor.cerrar()

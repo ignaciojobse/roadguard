@@ -293,3 +293,45 @@ def test_pipeline_sin_tracks_no_escribe_el_archivo(tmp_path) -> None:
     resultado = Pipeline(cfg, DetectorFalso()).ejecutar(video, str(tmp_path / "s"), escribir_video=False)
     assert resultado.ruta_tracks is None
     assert not os.path.exists(tmp_path / "s" / "tracks.csv")
+
+
+class DetectorQueSeInterrumpe(DetectorFalso):
+    """Simula un Ctrl+C del usuario al llegar al cuadro `en`."""
+
+    def __init__(self, en: int) -> None:
+        super().__init__()
+        self.en = en
+
+    def detectar(self, imagen) -> list[Deteccion]:
+        if self.llamadas == self.en:
+            raise KeyboardInterrupt
+        return super().detectar(imagen)
+
+
+def test_ctrl_c_escribe_salidas_parciales(tmp_path) -> None:
+    video = _video(tmp_path)
+    cfg = configuracion_desde_dict(_config(calibrada=True))
+    salida = str(tmp_path / "salida")
+
+    resultado = Pipeline(cfg, DetectorQueSeInterrumpe(en=60)).ejecutar(video, salida)
+
+    assert resultado.resumen.completada is False
+    assert resultado.resumen.n_cuadros_procesados == 60
+    assert any("interrumpida" in a for a in resultado.resumen.advertencias)
+    _, filas, resumen = _leer_salidas(salida)
+    assert resumen["ejecucion"]["completada"] is False
+    # El tramo de cercania abierto al interrumpir se cierra y queda en el CSV.
+    assert filas and filas[0]["regla"] == "cercania_peligrosa"
+    assert os.path.isfile(os.path.join(salida, "anotado.mp4"))
+
+
+def test_cli_ctrl_c_devuelve_130(tmp_path, capsys) -> None:
+    video = _video(tmp_path, n_cuadros=10)
+    ruta_cfg = _escribir_yaml(tmp_path, _config(calibrada=False))
+    codigo = cli.main(
+        ["procesar", "--video", video, "--config", ruta_cfg, "--salida", str(tmp_path / "s"),
+         "--sin-video"],
+        fabrica_detector=lambda cfg, args: DetectorQueSeInterrumpe(en=4),
+    )
+    assert codigo == 130
+    assert "INCOMPLETA" in capsys.readouterr().out

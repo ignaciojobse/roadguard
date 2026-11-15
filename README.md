@@ -13,34 +13,32 @@ revision humana. El sistema no reconoce patentes ni personas, no emite
 sanciones automaticas y no determina responsabilidades legales. Los umbrales
 son configurables y no se presentan como limites legales.
 
-## Alcance de esta rama
+## Estado del prototipo (entrega del 18-nov)
 
-Esta rama contiene la base compartida, los modulos de percepcion y geometria,
-la referencia M6, avances parciales de M4 (RF7) y M5, y la integracion
-end-to-end con CLI (`pipeline.py`, `cli.py`). El motor de reglas completo
-(RF8, RF9) aun no esta disponible: el pipeline corre con un motor minimo de
-cercania y puntaje. El reparto y el estado viven en `knowledge/roadmap/`.
+La cadena completa M1 a M5 corre de punta a punta desde la CLI: un MP4 mas el
+YAML de la camara entregan el video anotado, el CSV de eventos y el resumen
+JSON. El motor de reglas por defecto evalua las tres conductas inscritas
+(cercania RF7, zigzag RF8 y corte de carril RF9) y el puntaje con bandas
+(RF10 y RF11). Las tres secuencias de UA-DETRAC de la demo tienen su YAML en
+`configs/`. El reparto y el estado viven en `knowledge/roadmap/`.
 
-| Modulo | Estado en esta rama | Responsable |
+| Modulo | Estado | Responsable (aportes) |
 |---|---|---|
-| Contrato de datos (`tipos.py`, `poligonos.py`) | Implementado | Base compartida |
-| M1 Ingesta y configuracion | Implementado | Base compartida |
-| M2 Deteccion y seguimiento | Implementado | Ignacio Jobse |
-| M3 Geometria vial y trayectorias | Implementado | Giancarlos Ricci |
-| M4 Motor de reglas y riesgo | Parcial: cercania (RF7) | Francisco Castillo |
-| M5 Visualizacion y exportacion | Cajas, ID, carril, color y puntaje por riesgo, MP4 anotado, CSV de eventos y resumen JSON | Francisco Castillo |
-| M6 Evaluacion y diagnostico | Parcial: referencia NGSIM y F1 de eventos | Francisco Zuniga |
-| Datos y seleccion de secuencias | Parcial: NGSIM listo, UA-DETRAC pendiente | Francisco Zuniga |
-| Integracion y CLI | Implementado: `Pipeline` + `python -m roadguard procesar`, con `MotorCercania` como motor por defecto | Francisco Zuniga |
+| Contrato de datos (`tipos.py`, `poligonos.py`) | Implementado | Ignacio Jobse |
+| M1 Ingesta y configuracion | Implementado | Ignacio Jobse |
+| M2 Deteccion y seguimiento | Implementado: YOLOv8n y ByteTrack | Ignacio Jobse |
+| M3 Geometria vial y trayectorias | Implementado, con calibracion de las 3 secuencias | Ignacio Jobse y Giancarlos Ricci (calibracion) |
+| M4 Motor de reglas y riesgo | Implementado: RF7 a RF11 | Francisco Castillo (RF7; RF8 a RF11 de Francisco Zuniga) |
+| M5 Visualizacion y exportacion | Implementado: MP4 anotado con color y puntaje por banda, `eventos.csv`, `resumen.json` y `tracks.csv` | Giancarlos Ricci (con Francisco Zuniga) |
+| M6 Evaluacion y diagnostico | Referencia NGSIM, F1 de eventos, mAP@0.5 e IDF1 sobre UA-DETRAC | Francisco Zuniga |
+| Datos y seleccion de secuencias | NGSIM y 3 secuencias UA-DETRAC | Francisco Zuniga |
+| Integracion, CLI y rendimiento | Implementado: `Pipeline`, `python -m roadguard procesar` y `scripts/perfilar_fps.py` | Ignacio Jobse (codigo de integracion de Francisco Zuniga) |
 
-El contrato de datos de `tipos.py` se conserva completo, incluidas las
-estructuras que consumen los modulos posteriores (`Evento`, `PuntajeRiesgo`,
-`ResumenVehiculo`, `ResumenEjecucion`) y los umbrales de las reglas. Esa es
-la interfaz contra la que se integraran M4, M5 y M6, y por eso se mantiene
-estable aunque su implementacion viva en otra rama.
-
-Los modulos se usan como biblioteca y, desde esta rama, tambien encadenados
-por `roadguard.pipeline.Pipeline` y la CLI (ver «Uso»).
+El contrato de datos de `tipos.py` es la interfaz entre modulos (`Track`,
+`EstadoCinematico`, `Relacion`, `Evento`, `PuntajeRiesgo`, `ResumenVehiculo`,
+`ResumenEjecucion` y los umbrales de las reglas). Los modulos se usan como
+biblioteca o encadenados por `roadguard.pipeline.Pipeline` y la CLI (ver
+«Uso»).
 
 ## Instalacion
 
@@ -55,28 +53,48 @@ pip install -e .
 src/roadguard/
   tipos.py            Contrato de datos compartido entre modulos
   poligonos.py        Utilidades geometricas de poligonos
-  pipeline.py         Integracion end-to-end: Pipeline y MotorCercania
+  pipeline.py         Integracion end-to-end: Pipeline (y MotorCercania de respaldo)
   cli.py, __main__.py Linea de comandos (python -m roadguard)
   m1_ingesta/         IC   Ingesta y configuracion        RF1, RF4
   m2_deteccion/       DTS  Deteccion y seguimiento        RF2, RF3
   m3_geometria/       GVT  Geometria vial y trayectorias  RF4, RF5, RF6
-  m4_reglas/          Motor parcial: cercania (RF7)
+  m4_reglas/          MRR  Reglas y puntaje               RF7 a RF11
   m5_salidas/         VE   Video anotado, CSV y JSON       RF11, RF12
-  m6_evaluacion/      ED   Datos de referencia y metricas de eventos
-tests/                Pruebas unitarias (pytest)
-configs/              Configuraciones de camara
-datos/                Videos y anotaciones (no versionados)
+  m6_evaluacion/      ED   Referencias NGSIM y UA-DETRAC, metricas
+scripts/              Descarga y conversion de datos, calibracion, metricas y perfil de FPS
+tests/                Pruebas unitarias e integracion (pytest)
+configs/              Configuraciones de camara (MVI_39271, MVI_40714, MVI_40742)
+datos/                Videos, anotaciones y pesos (no versionados)
 docs/                 Plan de implementacion
 knowledge/            Contexto, decisiones, reparto y seguimiento del proyecto
 ```
+
+## Datos
+
+Los videos y los pesos no se versionan. Para dejar las tres secuencias de la
+demo listas, desde la raiz:
+
+```bash
+python scripts/bajar_ua_detrac.py MVI_39271 MVI_40714 MVI_40742   # JPG y XML, ~400 MB
+python scripts/jpg_a_mp4.py MVI_39271 MVI_40714 MVI_40742          # MP4 a 25 FPS, sin ffmpeg
+```
+
+Los pesos `yolov8n.pt` los baja Ultralytics la primera vez que se usan. Para
+una maquina sin red (la demo en vivo), conviene dejarlos antes en
+`datos/modelos/yolov8n.pt` y pasarlos con `--pesos`.
 
 ## Uso
 
 ```bash
 python -m roadguard procesar --video datos/videos/MVI_39271.mp4 \
     --config configs/MVI_39271.yaml --salida salidas/MVI_39271 \
-    [--pesos yolov8n.pt] [--max-cuadros N] [--sin-video] [--tracks] [--dispositivo cpu|cuda|mps]
+    [--pesos datos/modelos/yolov8n.pt] [--max-cuadros N] [--sin-video] [--tracks] \
+    [--dispositivo cpu|cuda|mps]
 ```
+
+Si la corrida se corta con Ctrl+C, igual se escriben las salidas con lo
+procesado: los eventos abiertos se cierran, `resumen.json` queda con
+`"completada": false` y la CLI termina con codigo 130.
 
 Con `pip install -e .` tambien queda el comando `roadguard`. En el directorio
 de salida se escriben `anotado.mp4` (cajas, ID, clase, carril, puntaje y
@@ -102,9 +120,29 @@ relaciones: list[Relacion], cambios: list[CambioCarril]) ->
 tuple[list[Evento], dict[int, PuntajeRiesgo]]` y `finalizar() ->
 list[Evento]`. Los eventos devueltos son los confirmados y cerrados en ese
 cuadro (van al CSV); los puntajes son los vigentes por vehiculo (van al
-video). Mientras `m4_reglas/motor.py` no exista, el motor por defecto es
-`MotorCercania`: RF7 mas puntaje RF10 (el aporte vale mientras el tramo esta
-activo y caduca `vigencia_aporte` segundos despues) y bandas RF11.
+video). El motor por defecto es `m4_reglas.motor.MotorReglas`, que combina
+cercania (RF7), zigzag (RF8), corte de carril (RF9) y el puntaje con
+caducidad y bandas (RF10 y RF11). `pipeline.MotorCercania` queda como motor
+minimo de respaldo (solo RF7 con puntaje) para pruebas.
+
+## Rendimiento
+
+El criterio de la propuesta es **>= 15 FPS a 720p en Colab T4**. El perfil
+por etapa (lectura, deteccion, seguimiento, geometria, reglas y salidas) se
+mide con:
+
+```bash
+python scripts/perfilar_fps.py --video datos/videos/MVI_39271.mp4 \
+    --config configs/MVI_39271.yaml --alto 720 --dispositivo cuda
+```
+
+UA-DETRAC es 960x540, asi que el script escala video y configuracion a
+1280x720 (los puntos del camino en metros no cambian), hace una inferencia de
+calentamiento y escribe `perfil.json`. Para la T4, abrir
+`scripts/perfil_colab_t4.ipynb` en Colab con `Entorno de ejecucion ->
+Cambiar tipo -> T4 GPU` y ejecutar todas las celdas: clona el repo, instala,
+baja MVI_39271 y corre el perfil con y sin MP4 anotado. Las cifras medidas
+estan en la bitacora 2, anexo de metricas.
 
 ## Uso como biblioteca
 
@@ -127,9 +165,10 @@ alimentar el historial causal y calcular las relaciones del cuadro. El
 resultado es el estado cinematico y las relaciones por ID, que es
 exactamente lo que consume el motor de reglas.
 
-### Primer avance de M4: cercania (RF7)
+### Reglas por separado: cercania (RF7)
 
-`DetectorCercania` procesa cada cuadro causalmente. Por defecto, la cercania
+Cada regla de `m4_reglas` tambien se usa sola. `DetectorCercania` procesa
+cada cuadro causalmente. Por defecto, la cercania
 exige velocidad sobre el umbral, THW bajo el umbral y persistencia continua de
 2 s; una observacion ausente o invalida, o un cambio de predecesor, corta el tramo.
 `entradas` abajo representa los datos que aporta el llamador por cuadro.
@@ -137,9 +176,9 @@ exige velocidad sobre el umbral, THW bajo el umbral y persistencia continua de
 para visualizacion y no deben acumularse; `cerrados` y `finalizar()` entregan
 eventos confirmados, cuyo fin es la ultima observacion valida. Sin calibracion
 se emite advertencia y no se genera evento. El aporte RF7 (40 por defecto) no
-es un puntaje acumulado. RF8, RF9, acumulacion/bandas RF10–RF11 e integracion
-end-to-end siguen pendientes; resultados experimentales requieren revision
-humana y no son determinaciones legales.
+es un puntaje acumulado: la acumulacion y las bandas las hace
+`CalculadorPuntaje` dentro de `MotorReglas`. Los resultados son
+experimentales, requieren revision humana y no son determinaciones legales.
 
 ```python
 from roadguard.m4_reglas import DetectorCercania
