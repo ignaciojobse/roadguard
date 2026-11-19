@@ -48,6 +48,10 @@ class Umbrales:
     cercania_velocidad_min: float = 5.0      # m/s
     cercania_thw_max: float = 1.5            # s
     cercania_persistencia: float = 2.0       # s
+    # Interrupcion maxima que no corta un tramo de cercania: una oclusion o
+    # un cuadro fuera de umbral mas corto que esto no parte el evento en dos.
+    # 0 = cualquier interrupcion corta (definicion original de RF7).
+    cercania_tolerancia_interrupcion: float = 0.0   # s
 
     # RF8 - Zigzag
     zigzag_cambios_min: int = 2              # cambios completos

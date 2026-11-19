@@ -75,8 +75,12 @@ class DetectorZigzag:
                 raise ValueError("t_cruce no puede superar t_confirmacion")
 
         ventana = self.umbrales.zigzag_ventana
+        # Solo libera memoria. Un cambio cuyo cruce cae dentro de la ventana
+        # puede llegar tarde, porque M3 lo confirma tras la permanencia, asi
+        # que la racha se conserva una ventana extra. Que el cambio continue
+        # o no la racha lo decide `t_cruce`, mas abajo.
         for ident, racha in list(self._rachas.items()):
-            if racha.cruces and t - racha.cruces[-1].t_cruce > ventana + _EPS:
+            if racha.cruces and t - racha.cruces[-1].t_cruce > 2 * ventana + _EPS:
                 del self._rachas[ident]
 
         eventos: list[Evento] = []

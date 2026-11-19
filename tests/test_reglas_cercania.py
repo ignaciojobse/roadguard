@@ -416,3 +416,119 @@ def test_prefijo_causal_es_invariante_y_snapshots_previos_no_cambian():
     ]
     assert snapshots_despues == snapshots
     assert resultados_completos == resultados_prefijo
+
+
+# --- Tolerancia a interrupciones breves (cercania_tolerancia_interrupcion) ---
+
+def _con_tolerancia(tol=1.0):
+    return DetectorCercania(Umbrales(cercania_tolerancia_interrupcion=tol))
+
+
+def _vacio(detector, n, t):
+    """Cuadro sin el vehiculo (oclusion)."""
+    return detector.actualizar(n, t, [], [])
+
+
+def test_tolerancia_cero_conserva_la_definicion_original():
+    d = DetectorCercania()
+    _actualizar(d, 0, 0.0)
+    _actualizar(d, 1, 1.0)
+    _actualizar(d, 2, 2.0)
+    assert len(_vacio(d, 3, 2.5).cerrados) == 1
+
+
+def test_oclusion_breve_no_parte_el_tramo():
+    d = _con_tolerancia(1.0)
+    _actualizar(d, 0, 0.0)
+    _actualizar(d, 1, 1.0)
+    pausa = _vacio(d, 2, 1.5)
+    assert not pausa.cerrados and not pausa.activos
+    _actualizar(d, 3, 2.0)
+    out = _actualizar(d, 4, 3.0)
+    assert out.activos[0].t_inicio == 0.0 and out.activos[0].t_fin == 3.0
+    eventos = d.finalizar()
+    assert len(eventos) == 1 and eventos[0].t_fin == 3.0
+
+
+def test_interrupcion_mas_larga_que_la_tolerancia_corta():
+    d = _con_tolerancia(1.0)
+    _actualizar(d, 0, 0.0)
+    _actualizar(d, 1, 1.0)
+    _actualizar(d, 2, 2.0)
+    assert not _vacio(d, 3, 2.9).cerrados
+    cerrado = _vacio(d, 4, 3.1).cerrados
+    assert len(cerrado) == 1 and cerrado[0].t_fin == 2.0
+
+
+def test_fuera_de_umbral_breve_tambien_se_tolera():
+    d = _con_tolerancia(1.0)
+    _actualizar(d, 0, 0.0)
+    _actualizar(d, 1, 1.0)
+    assert not _actualizar(d, 2, 1.5, thw=2.0).cerrados
+    assert _actualizar(d, 3, 2.0).activos[0].t_inicio == 0.0
+
+
+def test_persistencia_suma_tramos_unidos_por_la_tolerancia():
+    d = _con_tolerancia(1.0)
+    _actualizar(d, 0, 0.0)
+    _actualizar(d, 1, 0.9)
+    _vacio(d, 2, 1.4)
+    assert not _actualizar(d, 3, 1.8).activos  # hueco de 0,9 s: sigue, aun sin 2 s
+    assert _actualizar(d, 4, 2.0).activos  # 0,0 a 2,0 confirma aunque hubo hueco
+
+
+def test_otro_predecesor_abre_tramo_nuevo_aun_dentro_de_la_tolerancia():
+    d = _con_tolerancia(1.0)
+    _actualizar(d, 0, 0.0)
+    _actualizar(d, 1, 1.0)
+    _actualizar(d, 2, 2.0)
+    out = _actualizar(d, 3, 2.5, pred=4)
+    assert len(out.cerrados) == 1 and out.cerrados[0].id_relacionado == 2
+
+
+def test_tramo_retomado_tras_la_tolerancia_es_otro_evento():
+    d = _con_tolerancia(0.5)
+    _actualizar(d, 0, 0.0)
+    _actualizar(d, 1, 1.0)
+    _actualizar(d, 2, 2.0)
+    _vacio(d, 3, 2.4)
+    _vacio(d, 4, 2.6)  # aca vence la tolerancia
+    out = _actualizar(d, 5, 3.0)
+    assert not out.activos  # el tramo nuevo empieza en 3,0 y aun no confirma
+
+
+def test_evento_declara_la_tolerancia_usada():
+    d = _con_tolerancia(1.5)
+    for n, t in enumerate((0.0, 1.0, 2.0)):
+        out = _actualizar(d, n, t)
+    assert out.activos[0].umbrales["cercania_tolerancia_interrupcion"] == 1.5
+    assert "cercania_tolerancia_interrupcion" not in _actualizar(
+        DetectorCercania(), 0, 0.0
+    ).activos  # sin tolerancia el umbral no aparece
+
+
+def test_tolerancia_negativa_se_rechaza():
+    with pytest.raises(ValueError):
+        DetectorCercania(Umbrales(cercania_tolerancia_interrupcion=-0.1))
+
+
+def test_referencia_con_tolerancia_coincide_con_el_detector():
+    u = Umbrales(cercania_tolerancia_interrupcion=1.0)
+    presencia = [True] * 12 + [False] * 6 + [True] * 25 + [False] * 15 + [True] * 25
+    cuadros = []
+    for n, visible in enumerate(presencia):
+        t = n / 10
+        estados = [EstadoCinematico(2, n, t, 20.0 + 10 * t, 0.0, 10.0, 0, 1.0, True)]
+        if visible:
+            estados.append(EstadoCinematico(1, n, t, 10.0 + 10 * t, 0.0, 10.0, 0, 1.0, True))
+        cuadros.append(CuadroReferencia(n, t, estados, calcular_relaciones(estados, n, t)))
+    referencia = eventos_referencia(cuadros, u)
+    d = DetectorCercania(u)
+    detectados = []
+    for c in cuadros:
+        detectados.extend(d.actualizar(c.cuadro, c.t, c.estados, c.relaciones).cerrados)
+    detectados.extend(d.finalizar())
+    # el hueco de 0,6 s une los dos primeros tramos; el de 1,5 s los separa
+    assert [(e.t_inicio, e.t_fin) for e in referencia] == [(0.0, 4.2), (5.8, 8.2)]
+    r = evaluar_eventos(detectados, referencia)[Regla.CERCANIA]
+    assert (r.verdaderos_positivos, r.falsos_positivos, r.falsos_negativos) == (2, 0, 0)

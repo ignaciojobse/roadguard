@@ -93,6 +93,11 @@ def _cercania(cuadros: list[CuadroReferencia], u: Umbrales) -> list[EventoRefere
                 )
             )
 
+    tolerancia = u.cercania_tolerancia_interrupcion
+
+    def dentro(tramo: _Tramo, t: float) -> bool:
+        return tolerancia > 0 and t - tramo.t_ultimo <= tolerancia + _EPS
+
     for c in cuadros:
         velocidad = {e.id_vehiculo: e.velocidad for e in c.estados}
         activos: set[int] = set()
@@ -104,8 +109,8 @@ def _cercania(cuadros: list[CuadroReferencia], u: Umbrales) -> list[EventoRefere
             tramo = abiertos.get(r.id_seguidor)
             continua = (
                 tramo is not None
-                and tramo.cuadro_ultimo == c.cuadro - 1
                 and tramo.id_predecesor == r.id_predecesor
+                and (tramo.cuadro_ultimo == c.cuadro - 1 or dentro(tramo, c.t))
             )
             if tramo is not None and not continua:
                 cerrar(r.id_seguidor)
@@ -115,7 +120,8 @@ def _cercania(cuadros: list[CuadroReferencia], u: Umbrales) -> list[EventoRefere
             else:
                 abiertos[r.id_seguidor] = _Tramo(r.id_predecesor, c.cuadro, c.t, c.t)
         for id_vehiculo in [i for i in abiertos if i not in activos]:
-            cerrar(id_vehiculo)
+            if not dentro(abiertos[id_vehiculo], c.t):
+                cerrar(id_vehiculo)
     for id_vehiculo in list(abiertos):
         cerrar(id_vehiculo)
     return eventos

@@ -42,6 +42,7 @@ class _Tramo:
     variables: dict[str, Optional[float]]
     confirmado: bool = False
     confirmacion: Optional[float] = None
+    cuadro_ultimo: int = -1  # ultimo cuadro en que el tramo califico
 
 
 class DetectorCercania:
@@ -56,7 +57,8 @@ class DetectorCercania:
         self.umbrales = umbrales if umbrales is not None else Umbrales()
         u = self.umbrales
         for nombre in (
-            "cercania_velocidad_min", "cercania_thw_max", "cercania_persistencia"
+            "cercania_velocidad_min", "cercania_thw_max", "cercania_persistencia",
+            "cercania_tolerancia_interrupcion",
         ):
             x = getattr(u, nombre)
             if isinstance(x, bool) or not isinstance(x, (int, float)) or not math.isfinite(x):
@@ -65,6 +67,7 @@ class DetectorCercania:
             u.cercania_velocidad_min < 0
             or u.cercania_thw_max <= 0
             or u.cercania_persistencia <= 0
+            or u.cercania_tolerancia_interrupcion < 0
         ):
             raise ValueError("Umbrales RF7 fuera de rango")
         if (
@@ -187,9 +190,18 @@ class DetectorCercania:
                 )
 
         activos = []
+        tolerancia = self.umbrales.cercania_tolerancia_interrupcion
         for ident, old in list(self._tramos.items()):
             q = calificados.get(ident)
-            sigue = consecutivo and q is not None and q[0] == old.id_predecesor
+            dentro = tolerancia > 0 and t - old.ultimo <= tolerancia + _EPS
+            if q is not None and q[0] == old.id_predecesor:
+                sigue = (consecutivo and old.cuadro_ultimo == cuadro - 1) or dentro
+            elif q is not None:
+                sigue = False  # otro vehiculo delante: es otro tramo
+            else:
+                # Interrupcion (oclusion, metrica invalida o fuera de umbral):
+                # el tramo espera hasta `tolerancia` segundos sin cerrarse.
+                sigue = dentro
             if not sigue:
                 ev = self._evento(ident, old)
                 if ev is not None:
@@ -198,10 +210,11 @@ class DetectorCercania:
         for ident, (pred, variables) in calificados.items():
             tramo = self._tramos.get(ident)
             if tramo is None:
-                tramo = _Tramo(pred, float(t), float(t), variables)
+                tramo = _Tramo(pred, float(t), float(t), variables, cuadro_ultimo=cuadro)
                 self._tramos[ident] = tramo
             else:
                 tramo.ultimo, tramo.variables = float(t), variables
+                tramo.cuadro_ultimo = cuadro
             if (
                 not tramo.confirmado
                 and tramo.ultimo - tramo.inicio >= self.umbrales.cercania_persistencia - _EPS
@@ -241,17 +254,22 @@ class DetectorCercania:
             return None
         variables = dict(tramo.variables)
         variables["t_confirmacion"] = tramo.confirmacion
+        umbrales = {
+            "cercania_velocidad_min": float(self.umbrales.cercania_velocidad_min),
+            "cercania_thw_max": float(self.umbrales.cercania_thw_max),
+            "cercania_persistencia": float(self.umbrales.cercania_persistencia),
+        }
+        if self.umbrales.cercania_tolerancia_interrupcion > 0:
+            umbrales["cercania_tolerancia_interrupcion"] = float(
+                self.umbrales.cercania_tolerancia_interrupcion
+            )
         return Evento(
             id_vehiculo=ident,
             regla=Regla.CERCANIA,
             t_inicio=tramo.inicio,
             t_fin=tramo.ultimo,
             variables=variables,
-            umbrales={
-                "cercania_velocidad_min": float(self.umbrales.cercania_velocidad_min),
-                "cercania_thw_max": float(self.umbrales.cercania_thw_max),
-                "cercania_persistencia": float(self.umbrales.cercania_persistencia),
-            },
+            umbrales=umbrales,
             aporte_puntaje=self.umbrales.aporte_cercania,
             id_relacionado=tramo.id_predecesor,
         )

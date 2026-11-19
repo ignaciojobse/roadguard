@@ -39,6 +39,18 @@ def test_racha_prolongada_no_duplica_evento():
     assert d.actualizar(11.0, []) == []
 
 
+def test_cambio_confirmado_tarde_sigue_en_la_misma_racha():
+    # Caso real de NGSIM (vehiculo 1255): el tercer cruce queda a 9,5 s del
+    # segundo, dentro de la ventana, pero se confirma a 10,5 s. No es una
+    # racha nueva y no debe emitir un segundo evento.
+    d = DetectorZigzag()
+    d.actualizar(1.0, [_cambio(0.0)])
+    assert len(d.actualizar(4.0, [_cambio(3.0, 1, 0)])) == 1
+    assert d.actualizar(13.0, []) == []
+    assert d.actualizar(13.5, [_cambio(12.5)]) == []
+    assert d.actualizar(16.0, [_cambio(15.0, 1, 0)]) == []
+
+
 def test_racha_nueva_tras_cerrar_la_anterior():
     d = DetectorZigzag()
     d.actualizar(1.0, [_cambio(0.0)])
