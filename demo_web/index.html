@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RoadGuard · Demo en vivo</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400..700&display=swap">
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<header class="barra">
+  <div class="marca">
+    <svg viewBox="0 0 64 72" width="30" height="34" aria-hidden="true"><path d="M32 4 L58 14 V36 C58 52 47 62 32 68 C17 62 6 52 6 36 V14 Z" fill="none" stroke="#4C9AFF" stroke-width="5" stroke-linejoin="round"/><path d="M32 19 V27 M32 33 V41 M32 47 V55" stroke="#F2F5F8" stroke-width="5" stroke-linecap="round"/></svg>
+    <span>RoadGuard</span><span class="sub">demo en vivo</span>
+  </div>
+  <nav class="secuencias" id="secuencias" aria-label="Cámara"></nav>
+  <div class="metricas" id="metricas"></div>
+</header>
+
+<nav class="pasos" id="pasos" aria-label="Etapas del sistema">
+  <button data-paso="1"><b>1</b> Cuadro</button>
+  <button data-paso="2"><b>2</b> Detectar</button>
+  <button data-paso="3"><b>3</b> Seguir</button>
+  <button data-paso="4"><b>4</b> Metros y carriles</button>
+  <button data-paso="5"><b>5</b> Reglas y riesgo</button>
+  <button data-paso="6"><b>6</b> Resultado</button>
+</nav>
+<p class="explicacion" id="explicacion"></p>
+
+<main class="escenario">
+  <section class="camara">
+    <canvas id="lienzo-camara" width="960" height="540" aria-label="Cuadro de la cámara con las capas del sistema"></canvas>
+    <div class="rotulo-camara" id="rotulo-camara"></div>
+  </section>
+  <aside class="lateral">
+    <div class="panel">
+      <h2>Vista de pájaro <small id="nota-pajaro">metros sobre el camino</small></h2>
+      <canvas id="lienzo-pajaro" width="720" height="260" aria-label="Vista de pájaro en metros"></canvas>
+    </div>
+    <div class="panel" id="panel-ahora">
+      <h2>Ahora</h2>
+      <div id="ahora"></div>
+    </div>
+    <div class="panel" id="panel-vehiculo">
+      <h2>Vehículo <small>clic en una caja</small></h2>
+      <div id="vehiculo" class="vacio">Selecciona un vehículo en la cámara o en la vista de pájaro.</div>
+    </div>
+  </aside>
+</main>
+
+<footer class="controles">
+  <div class="transporte">
+    <button id="btn-play" aria-label="Reproducir o pausar">▶</button>
+    <button id="btn-atras" aria-label="Retroceder un cuadro">−1</button>
+    <button id="btn-adelante" aria-label="Avanzar un cuadro">+1</button>
+    <select id="velocidad" aria-label="Velocidad">
+      <option value="0.5">0,5×</option><option value="1" selected>1×</option><option value="2">2×</option>
+    </select>
+    <span id="reloj" class="reloj">0,0 s</span>
+  </div>
+  <canvas id="lienzo-linea" width="1600" height="96" aria-label="Línea de tiempo de eventos"></canvas>
+  <div class="contadores" id="contadores"></div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

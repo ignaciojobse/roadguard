@@ -15,7 +15,15 @@ import os
 from enum import Enum
 from typing import Any, Iterable, Optional
 
-from roadguard.tipos import EstadoCinematico, Evento, ResumenEjecucion, ResumenVehiculo, Track
+from roadguard.tipos import (
+    EstadoCinematico,
+    Evento,
+    PuntajeRiesgo,
+    Relacion,
+    ResumenEjecucion,
+    ResumenVehiculo,
+    Track,
+)
 
 COLUMNAS_FIJAS: tuple[str, ...] = (
     "id_vehiculo",
@@ -143,6 +151,69 @@ class EscritorTracks:
     def cerrar(self) -> None:
         if not self._f.closed:
             self._f.close()
+
+
+COLUMNAS_ESTADOS: tuple[str, ...] = (
+    "cuadro", "t", "id", "x_m", "y_m", "velocidad", "carril", "confianza_carril",
+    "id_predecesor", "distancia", "thw", "ttc", "puntaje", "nivel",
+)
+
+
+class EscritorEstados:
+    """Escribe `estados.csv`: lo que M3 y M4 saben de cada vehiculo en cada cuadro.
+
+    Una fila por vehiculo y cuadro con su posicion en metros, velocidad,
+    carril, relacion con el de adelante (distancia, THW y TTC) y el puntaje
+    de riesgo vigente. Es la traza completa de la corrida: sirve para la demo
+    interactiva y para revisar por que un vehiculo cambio de color. Sin
+    calibracion, los campos en metros quedan vacios (Paso 5).
+    """
+
+    def __init__(self, ruta: str) -> None:
+        _preparar_directorio(ruta)
+        self.ruta = ruta
+        self._f = open(ruta, "w", encoding="utf-8", newline="")
+        self._escritor = csv.DictWriter(self._f, fieldnames=list(COLUMNAS_ESTADOS))
+        self._escritor.writeheader()
+        self.n_filas = 0
+
+    def escribir(
+        self,
+        estados: Iterable[EstadoCinematico],
+        relaciones: Iterable[Relacion],
+        puntajes: dict[int, PuntajeRiesgo],
+    ) -> None:
+        rel = {r.id_seguidor: r for r in relaciones}
+        for e in estados:
+            r = rel.get(e.id_vehiculo)
+            p = puntajes.get(e.id_vehiculo)
+            self._escritor.writerow(
+                {
+                    "cuadro": e.cuadro,
+                    "t": round(e.t, 4),
+                    "id": e.id_vehiculo,
+                    "x_m": _redondeo(e.x_camino, 3),
+                    "y_m": _redondeo(e.y_camino, 3),
+                    "velocidad": _redondeo(e.velocidad, 3),
+                    "carril": _celda(e.carril),
+                    "confianza_carril": round(e.confianza_carril, 3),
+                    "id_predecesor": _celda(None if r is None else r.id_predecesor),
+                    "distancia": _redondeo(None if r is None else r.distancia, 3),
+                    "thw": _redondeo(None if r is None else r.thw, 3),
+                    "ttc": _redondeo(None if r is None else r.ttc, 3),
+                    "puntaje": "" if p is None else p.puntaje,
+                    "nivel": "" if p is None else p.nivel.value,
+                }
+            )
+            self.n_filas += 1
+
+    def cerrar(self) -> None:
+        if not self._f.closed:
+            self._f.close()
+
+
+def _redondeo(valor: Optional[float], decimales: int) -> Any:
+    return "" if valor is None else round(valor, decimales)
 
 
 def a_json(valor: Any) -> Any:

@@ -23,7 +23,7 @@ import pytest
 from roadguard import cli
 from roadguard.m1_ingesta.config import configuracion_desde_dict
 from roadguard.m1_ingesta.video import iterar_cuadros, leer_metadatos
-from roadguard.m5_salidas.exportar import COLUMNAS_FIJAS, COLUMNAS_TRACKS
+from roadguard.m5_salidas.exportar import COLUMNAS_ESTADOS, COLUMNAS_FIJAS, COLUMNAS_TRACKS
 from roadguard.pipeline import MotorCercania, Pipeline, nivel_por_puntaje
 from roadguard.tipos import Caja, Deteccion, NivelRiesgo, Umbrales
 
@@ -335,3 +335,43 @@ def test_cli_ctrl_c_devuelve_130(tmp_path, capsys) -> None:
     )
     assert codigo == 130
     assert "INCOMPLETA" in capsys.readouterr().out
+
+
+def test_estados_traza_metros_thw_y_puntaje(tmp_path) -> None:
+    video = _video(tmp_path)
+    cfg = configuracion_desde_dict(_config(calibrada=True))
+    salida = str(tmp_path / "estados")
+
+    resultado = Pipeline(cfg, DetectorFalso()).ejecutar(
+        video, salida, escribir_video=False, escribir_estados=True
+    )
+
+    assert resultado.ruta_estados == os.path.join(salida, "estados.csv")
+    with open(resultado.ruta_estados, encoding="utf-8", newline="") as f:
+        lector = csv.DictReader(f)
+        filas = list(lector)
+        assert lector.fieldnames == list(COLUMNAS_ESTADOS)
+    assert len({(f["cuadro"], f["id"]) for f in filas}) == len(filas)
+    con_thw = [f for f in filas if f["thw"]]
+    assert con_thw and all(0 < float(f["thw"]) < 3 for f in con_thw)
+    assert all(f["x_m"] != "" for f in filas)
+    # El seguidor llega a amarillo (40) mientras la cercania esta activa.
+    assert max(int(f["puntaje"]) for f in filas) == 40
+    assert {f["nivel"] for f in filas} >= {"verde", "amarillo"}
+
+
+def test_estados_sin_calibracion_deja_vacios_los_metros(tmp_path) -> None:
+    video = _video(tmp_path, n_cuadros=20)
+    ruta_cfg = _escribir_yaml(tmp_path, _config(calibrada=False))
+    salida = str(tmp_path / "sin_calib")
+    codigo = cli.main(
+        ["procesar", "--video", video, "--config", ruta_cfg, "--salida", salida,
+         "--sin-video", "--estados"],
+        fabrica_detector=lambda cfg, args: DetectorFalso(),
+    )
+    assert codigo == 0
+    with open(os.path.join(salida, "estados.csv"), encoding="utf-8", newline="") as f:
+        filas = list(csv.DictReader(f))
+    assert filas and all(f["x_m"] == "" and f["thw"] == "" for f in filas)
+    assert all(f["puntaje"] == "0" for f in filas)
+    assert not os.path.exists(os.path.join(salida, "tracks.csv"))

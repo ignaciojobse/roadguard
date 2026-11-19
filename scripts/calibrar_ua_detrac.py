@@ -2,7 +2,8 @@
 
 Uso, desde la raiz del repo:
 
-    python scripts/calibrar_ua_detrac.py
+    python scripts/calibrar_ua_detrac.py                       # todas
+    python scripts/calibrar_ua_detrac.py MVI_40243 MVI_40712   # solo esas
 
 Escribe `configs/<secuencia>.yaml` y, si estan los cuadros en
 `datos/ua-detrac/cuadros/<secuencia>/`, una imagen de verificacion en
@@ -147,6 +148,72 @@ SECUENCIAS = {
             "  de la linea continua central y ninguno pisa la banquina.",
         ],
     },
+    "MVI_40243": {
+        "descripcion": (
+            "UA-DETRAC entrenamiento, nublado, camara fija sobre una autopista urbana. "
+            "Calzada derecha, entre el bandejon central y la orilla; el trafico se aleja "
+            "de la camara (de abajo hacia arriba en la imagen)."
+        ),
+        # Lineas discontinuas A (la primera junto al carril del bandejon) y B
+        # (la siguiente), dos trazos cada una, medidos en el sentido de avance
+        # (cercano a lejano) sobre un fondo sin vehiculos (mediana de 85
+        # cuadros, top-hat). La tercera linea, C, no se usa para ajustar: es
+        # el control independiente (cae a 7,4-7,8 m de A y sus trazos miden
+        # 5,8 m con 9,5 m de hueco).
+        "lineas": [
+            ([(506.2, 411.2), (600.9, 319.0), (684.8, 237.8), (715.0, 208.0)], 0.0),
+            ([(685.1, 410.7), (739.6, 317.4), (786.9, 236.4), (804.3, 205.6)], 3.75),
+        ],
+        # Autopista: 6 m de trazo y 9 m de hueco (GB 5768.3-2009) y carril de
+        # 3,75 m (CJJ 37-2012, via rapida). Con 3,5 m la camara implicita no es
+        # fisica cuando se agrega la linea C.
+        "trazo": 6.0,
+        "hueco": 9.0,
+        # Linea de borde junto al bandejon (-4,1 m, medida), A, B, C y un
+        # carril mas hasta la orilla, cortado por el borde de la imagen. Los
+        # vehiculos del XML se agrupan en -1,7 / 1,9 / 5,5 / 8,3 m.
+        "bordes": [-4.1, 0.0, 3.75, 7.5, 11.25],
+        # De -5 a 70 m: a 65 km/h un auto tarda 4 s en cruzarlo. Con solo el
+        # tramo de los trazos (35 m) lo cruzaba en menos de los 2 s de
+        # persistencia de la cercania, y la regla nunca podia confirmarse. A
+        # 70 m los carriles todavia miden ~40 px de ancho.
+        "x": (-5.0, 70.0),
+        "carril_0": "junto al bandejon central",
+        "verificacion": "img00300.jpg",
+        "notas": [
+            "Confirmada: escala y patron de 6/9 m (la linea C, no usada, cae a 7,4-7,8 m",
+            "  y sus trazos miden 5,8 y 9,5 m) y 63 km/h de mediana para los autos del XML.",
+            "Candidata a validar: ancho de carril de 3,75 m (norma de via rapida).",
+        ],
+    },
+    "MVI_40712": {
+        "descripcion": (
+            "UA-DETRAC prueba, nublado, camara fija sobre la misma pasarela que "
+            "MVI_40714, con el encuadre levemente movido y trafico fluido. Calzada "
+            "izquierda; el trafico avanza hacia la camara."
+        ),
+        # Los mismos puntos de MVI_40714 (L1 discontinua y S continua, en las
+        # mismas filas), llevados a este encuadre con la homografia imagen a
+        # imagen entre los dos fondos sin vehiculos (ORB + RANSAC, 228 pares,
+        # error mediano 1,0 px). Se verifico que caen sobre las lineas pintadas.
+        "lineas": [
+            ([(488.9, 249.1), (484.7, 286.4), (475.0, 370.3)], 0.0),
+            ([(400.5, 249.1), (384.6, 286.5), (348.7, 370.3)], 3.5),
+        ],
+        "posiciones": [0.0, 6.0, 15.0],
+        "fuente": "una linea continua y una discontinua (transferidas de MVI_40714)",
+        "trazo": 6.0,
+        "hueco": 9.0,
+        "bordes": [-3.6, 0.0, 3.5, 6.6, 10.1],
+        "x": (-10.0, 24.0),
+        "carril_0": "junto a la baranda central (viraje)",
+        "verificacion": "img00300.jpg",
+        "notas": [
+            "Confirmada: misma camara que MVI_40714 (calibracion transferida con",
+            "  error de registro de 1 px) y velocidades del XML coherentes con la via.",
+            "Candidata a validar: ancho de carril de 3,5 m y el borde junto a la vereda.",
+        ],
+    },
 }
 
 
@@ -289,10 +356,14 @@ def imagen_de_verificacion(nombre: str, datos: dict, r: ResultadoCalibracion | N
     cv2.imwrite(str(destino / f"{nombre}.png"), im)
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
+    """Sin argumentos genera todas las secuencias; con nombres, solo esas."""
     from roadguard.m1_ingesta.config import cargar_configuracion
 
+    pedidas = argv if argv is not None else sys.argv[1:]
     for nombre, s in SECUENCIAS.items():
+        if pedidas and nombre not in pedidas:
+            continue
         if "rayos" in s:
             datos, r = sin_calibrar(nombre), None
         else:
