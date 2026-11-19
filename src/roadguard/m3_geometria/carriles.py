@@ -55,8 +55,8 @@ class DetectorCambioCarril:
         segundos de observaciones con confianza >= `confianza_min` en el
         candidato. Una observacion confiable de vuelta en el carril estable
         cancela el candidato (oscilacion). Las observaciones de baja
-        confianza (sobre la linea) o fuera de carril no confirman ni
-        cancelan.
+        confianza (sobre la linea) o fuera de carril interrumpen la
+        permanencia confiable, sin borrar el ultimo carril estable.
     """
 
     def __init__(self, confianza_min: float, permanencia: float = 1.0) -> None:
@@ -72,23 +72,32 @@ class DetectorCambioCarril:
         confianza: float = 1.0,
     ) -> Optional[CambioCarril]:
         """Devuelve un CambioCarril cuando se confirma, si no None."""
+        e = self._estados.get(id_vehiculo)
         if carril is None:
+            if e is not None:
+                e.t_estable_inicio = None
             return None
-        e = self._estados.setdefault(id_vehiculo, _EstadoCarril())
+        if e is None:
+            e = self._estados.setdefault(id_vehiculo, _EstadoCarril())
         confiable = confianza >= self.confianza_min
 
         if carril == e.estable:
             if confiable:
                 e.candidato = e.t_cruce = e.t_estable_inicio = None
+            elif e.candidato is not None:
+                e.t_estable_inicio = None
             return None
 
         if carril != e.candidato:
             if not confiable and e.candidato is not None:
+                e.t_estable_inicio = None
                 return None
             e.candidato = carril
             e.t_cruce = t
             e.t_estable_inicio = t if confiable else None
-        elif confiable and e.t_estable_inicio is None:
+        elif not confiable:
+            e.t_estable_inicio = None
+        elif e.t_estable_inicio is None:
             e.t_estable_inicio = t
 
         if e.t_estable_inicio is None or t - e.t_estable_inicio < self.permanencia:
@@ -110,6 +119,12 @@ class DetectorCambioCarril:
     def carril_estable(self, id_vehiculo: int) -> Optional[int]:
         e = self._estados.get(id_vehiculo)
         return None if e is None else e.estable
+
+    def interrumpir_ausentes(self, ids_presentes: set[int]) -> None:
+        """Reinicia permanencias candidatas de IDs ausentes, conserva carril estable."""
+        for ident, estado in self._estados.items():
+            if ident not in ids_presentes:
+                estado.candidato = estado.t_cruce = estado.t_estable_inicio = None
 
     def olvidar(self, id_vehiculo: int) -> None:
         """Reinicia el estado cuando la identidad es dudosa (riesgos 4.4)."""

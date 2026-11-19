@@ -48,11 +48,15 @@ class DetectorVehiculos:
                 "RF2 requiere Ultralytics: pip install -r requirements.txt"
             ) from e
         self.cfg = cfg
+        self.region_interes = list(cfg.region_interes)
         self.modelo = YOLO(pesos)
         self.dispositivo = dispositivo
         self.tam_imagen = tam_imagen
         self.version_modelo = f"ultralytics {ultralytics.__version__} / {pesos}"
         self._ids_coco = [i for i, c in MAPEO_COCO.items() if c in cfg.clases]
+
+    def actualizar_region_interes(self, region: list[tuple[float, float]]) -> None:
+        self.region_interes = list(region)
 
     def detectar(self, imagen: "object") -> list[Deteccion]:
         """Devuelve detecciones con clase, caja y confianza (RF2)."""
@@ -70,6 +74,7 @@ class DetectorVehiculos:
             cajas.conf.cpu().numpy(),
             cajas.cls.cpu().numpy(),
             self.cfg,
+            self.region_interes,
         )
 
 
@@ -78,6 +83,7 @@ def detecciones_desde_arrays(
     confianzas: Sequence[float],
     clases_coco: Sequence[Any],
     cfg: Configuracion,
+    region_interes: Optional[list[tuple[float, float]]] = None,
 ) -> list[Deteccion]:
     """Aplica mapeo de clases, clases configuradas, confianza minima y
     region de interes a la salida cruda del modelo (RF2)."""
@@ -90,8 +96,7 @@ def detecciones_desde_arrays(
             continue
         caja = Caja(float(x1), float(y1), float(x2), float(y2))
         detecciones.append(Deteccion(clase=clase, confianza=float(conf), caja=caja))
-    return filtrar_region_interes(detecciones, cfg.region_interes)
-
+    return filtrar_region_interes(detecciones, cfg.region_interes if region_interes is None else region_interes)
 
 def filtrar_region_interes(
     detecciones: list[Deteccion], region: list[tuple[float, float]]

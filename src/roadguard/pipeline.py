@@ -33,6 +33,7 @@ from typing import Iterable, Optional, Protocol
 
 from roadguard.m1_ingesta.config import (
     ADVERTENCIA_SIN_CALIBRACION_CORTA,
+    ErrorConfiguracion,
     validar_consistencia,
 )
 from roadguard.m1_ingesta.video import iterar_cuadros, leer_metadatos
@@ -41,6 +42,8 @@ from roadguard.m3_geometria.carriles import DetectorCambioCarril
 from roadguard.m3_geometria.homografia import ProyectorCamino
 from roadguard.m3_geometria.relaciones import calcular_relaciones
 from roadguard.m3_geometria.trayectorias import HistorialCausal
+from roadguard.m3_geometria.movimiento import CompensadorCamara, MovimientoCamara
+from roadguard.m3_geometria.apoyo import estimar_apoyo_longitudinal
 from roadguard.m4_reglas.cercania import DetectorCercania
 from roadguard.m4_reglas.motor import MotorReglas as MotorReglasM4
 from roadguard.m5_salidas.dibujo import anotar_cuadro
@@ -52,6 +55,7 @@ from roadguard.m5_salidas.exportar import (
 )
 from roadguard.tipos import (
     CambioCarril,
+    Carril,
     Configuracion,
     Deteccion,
     EstadoCinematico,
@@ -173,6 +177,19 @@ class _Acumulado:
 
 
 @dataclass
+class _ContextoGeometria:
+    compensador: Optional[CompensadorCamara] = None
+    movimiento: Optional[MovimientoCamara] = None
+    carriles_actuales: list[Carril] = field(default_factory=list)
+    validos: int = 0
+    invalidos: int = 0
+    residuo_maximo: Optional[float] = None
+    fallo_actual: Optional[str] = None
+    ultimo_fallo: Optional[str] = None
+    fallos_apoyo: int = 0
+
+
+@dataclass
 class ResultadoPipeline:
     """Lo que devuelve `Pipeline.ejecutar`, ademas de los archivos en disco."""
 
@@ -201,7 +218,13 @@ class Pipeline:
         motor: Optional[MotorReglas] = None,
         version_modelo: Optional[str] = None,
         ruta_config: Optional[str] = None,
+        compensar_camara: bool = False,
+        metodo_apoyo: str = "centro_inferior",
     ) -> None:
+        if metodo_apoyo not in {"centro_inferior", "longitudinal"}:
+            raise ErrorConfiguracion("metodo_apoyo debe ser 'centro_inferior' o 'longitudinal'")
+        if metodo_apoyo == "longitudinal" and not ProyectorCamino(cfg.homografia).disponible:
+            raise ErrorConfiguracion("El apoyo longitudinal requiere una homografia/proyector disponible")
         self.cfg = cfg
         self.detector = detector
         self.motor: MotorReglas = motor if motor is not None else MotorReglasM4(cfg.umbrales)
@@ -210,6 +233,8 @@ class Pipeline:
         )
         self.ruta_config = ruta_config
         self.proyector = ProyectorCamino(cfg.homografia)
+        self.compensar_camara = compensar_camara
+        self.metodo_apoyo = metodo_apoyo
 
     def ejecutar(
         self,
@@ -225,6 +250,9 @@ class Pipeline:
         cuadro) para evaluar deteccion y seguimiento contra una referencia.
         """
         metadatos = leer_metadatos(ruta_video)
+        geometria = _ContextoGeometria(
+            CompensadorCamara(self.cfg.region_interes) if self.compensar_camara else None
+        )
         os.makedirs(dir_salida, exist_ok=True)
         ruta_anotado = os.path.join(dir_salida, NOMBRE_VIDEO) if escribir_video else None
         ruta_eventos = os.path.join(dir_salida, NOMBRE_EVENTOS)
@@ -239,7 +267,10 @@ class Pipeline:
         rotulo = None if self.proyector.disponible else ADVERTENCIA_SIN_CALIBRACION_CORTA
 
         seguidor = SeguidorByteTrack(fps=metadatos.fps)
-        historial = HistorialCausal(metadatos.fps, self.proyector, self.cfg.carriles)
+        historial = HistorialCausal(
+            metadatos.fps, self.proyector, self.cfg.carriles,
+            confianza_min_carril=self.cfg.confianza_min_carril,
+        )
         cambios_carril = DetectorCambioCarril(
             self.cfg.confianza_min_carril, self.cfg.permanencia_cambio_carril
         )
@@ -257,7 +288,7 @@ class Pipeline:
                     if max_cuadros is not None and cuadro >= max_cuadros:
                         break
                     tracks, estados, relaciones, cambios, puntajes, cerrados = self._procesar_cuadro(
-                        cuadro, t, imagen, seguidor, historial, cambios_carril, tiempos
+                        cuadro, t, imagen, seguidor, historial, cambios_carril, tiempos, geometria
                     )
                     eventos.extend(cerrados)
                     self._acumular(acumulados, tracks, puntajes)
@@ -266,7 +297,10 @@ class Pipeline:
                     if escritor is not None:
                         t0 = time.perf_counter()
                         anotado = anotar_cuadro(
-                            imagen, tracks, estados, self.cfg.carriles, rotulo, puntajes
+                            imagen, tracks, estados,
+                            geometria.carriles_actuales,
+                            (f"COMPENSACION EN ESPERA: {geometria.fallo_actual}" if geometria.fallo_actual else rotulo),
+                            puntajes
                         )
                         escritor.escribir(anotado)
                         tiempos["salidas"] += time.perf_counter() - t0
@@ -300,6 +334,16 @@ class Pipeline:
                 f"Historial reiniciado por identidad dudosa en {len(historial.reinicios)} "
                 "ocasiones (riesgos 4.4)"
             )
+        if historial.observaciones_baja_confianza:
+            advertencias.append(
+                f"{historial.observaciones_baja_confianza} observaciones con confianza de carril baja excluidas"
+            )
+        if historial.cajas_recortadas:
+            advertencias.append(
+                f"{historial.cajas_recortadas} cajas recortadas excluidas de geometria"
+            )
+        if geometria.invalidos:
+            advertencias.append(f"Compensacion de camara invalida en {geometria.invalidos} cuadros; metricas suspendidas (ultimo motivo: {geometria.ultimo_fallo})")
 
         vehiculos = [
             ResumenVehiculo(
@@ -323,7 +367,12 @@ class Pipeline:
             calibrado=self.proyector.disponible,
             advertencias=advertencias,
             configuracion_sha256=_sha256_archivo(self.ruta_config),
-            parametros=dataclasses.asdict(self.cfg),
+            parametros={**dataclasses.asdict(self.cfg), "procesamiento_geometria": {
+                "compensar_camara": self.compensar_camara, "metodo_apoyo": self.metodo_apoyo,
+                "referencia": "primer_cuadro", "cuadros_validos": geometria.validos,
+                "cuadros_invalidos": geometria.invalidos, "residuo_maximo": geometria.residuo_maximo,
+                "fallos_apoyo": geometria.fallos_apoyo,
+            }},
             n_eventos=conteo_por_regla(eventos),
             fps_por_etapa={
                 etapa: (n_cuadros / s if s > 0 else 0.0) for etapa, s in tiempos.items()
@@ -345,11 +394,35 @@ class Pipeline:
         historial: HistorialCausal,
         cambios_carril: DetectorCambioCarril,
         tiempos: dict[str, float],
+        geometria: Optional["_ContextoGeometria"] = None,
     ) -> tuple[
         list[Track], list[EstadoCinematico], list[Relacion], list[CambioCarril],
         dict[int, PuntajeRiesgo], list[Evento],
     ]:
         t0 = time.perf_counter()
+        movimiento = None
+        if geometria is not None and geometria.compensador is not None:
+            movimiento = geometria.compensador.actualizar(imagen)
+            geometria.movimiento = movimiento
+            if movimiento.valido:
+                geometria.fallo_actual = None
+                geometria.validos += 1
+                if movimiento.residuo_mediano is not None:
+                    geometria.residuo_maximo = max(geometria.residuo_maximo or 0.0, movimiento.residuo_mediano)
+                geometria.carriles_actuales = _transformar_carriles(self.cfg.carriles, movimiento)
+                region = movimiento.transformar_puntos_referencia_a_actual(self.cfg.region_interes)
+                if region is not None and hasattr(self.detector, "actualizar_region_interes"):
+                    self.detector.actualizar_region_interes(region)
+            else:
+                geometria.invalidos += 1
+                geometria.fallo_actual = movimiento.motivo or "transformacion no disponible"
+                geometria.ultimo_fallo = geometria.fallo_actual
+                geometria.carriles_actuales = []
+        elif geometria is not None:
+            geometria.carriles_actuales = list(self.cfg.carriles)
+        t_cam = time.perf_counter()
+        tiempos["geometria"] += t_cam - t0
+        t0 = t_cam
         detecciones = self.detector.detectar(imagen)
         t1 = time.perf_counter()
         tracks = seguidor.actualizar(detecciones, cuadro, t)
@@ -357,8 +430,35 @@ class Pipeline:
 
         estados: list[EstadoCinematico] = []
         cambios: list[CambioCarril] = []
+        cambios_carril.interrumpir_ausentes({track.id_vehiculo for track in tracks})
+        tracks_dibujo = []
+        disponible = geometria is None or geometria.compensador is None or (movimiento is not None and movimiento.valido)
         for track in tracks:
-            estado = historial.actualizar(track)
+            punto_ref = track.punto_calzada_px
+            if disponible and movimiento is not None:
+                punto_ref = movimiento.transformar_punto_actual_a_referencia(track.punto_calzada_px)
+            if disponible and self.metodo_apoyo == "longitudinal":
+                punto_ref = estimar_apoyo_longitudinal(
+                    track.caja, self.proyector,
+                    movimiento.actual_a_referencia if movimiento is not None else None,
+                )
+                if punto_ref is None and geometria is not None:
+                    geometria.fallos_apoyo += 1
+            punto_disponible = disponible and punto_ref is not None
+            estado = historial.actualizar(
+                track, (imagen.shape[1], imagen.shape[0]), punto_referencia=punto_ref,
+                geometria_disponible=punto_disponible,
+            )
+            punto_actual = None
+            if punto_disponible:
+                punto_actual = (
+                    movimiento.transformar_puntos_referencia_a_actual([punto_ref])
+                    if movimiento is not None else [punto_ref]
+                )
+            tracks_dibujo.append(
+                dataclasses.replace(track, punto_calzada_px=punto_actual[0])
+                if punto_actual else track
+            )
             estados.append(estado)
             cambio = cambios_carril.actualizar(
                 track.id_vehiculo, estado.carril, t, estado.confianza_carril
@@ -370,6 +470,8 @@ class Pipeline:
         relaciones = calcular_relaciones(estados, cuadro, t)
         t3 = time.perf_counter()
 
+        if geometria is not None and geometria.compensador is not None and not disponible:
+            cambios = []
         cerrados, puntajes = self.motor.actualizar(
             t, {e.id_vehiculo: e for e in estados}, relaciones, cambios
         )
@@ -378,7 +480,7 @@ class Pipeline:
         tiempos["seguimiento"] += t2 - t1
         tiempos["geometria"] += t3 - t2
         tiempos["reglas"] += t4 - t3
-        return tracks, estados, relaciones, cambios, puntajes, cerrados
+        return tracks_dibujo or tracks, estados, relaciones, cambios, puntajes, cerrados
 
     @staticmethod
     def _acumular(
@@ -412,3 +514,17 @@ def _sha256_archivo(ruta: Optional[str]) -> str:
         return ""
     with open(ruta, "rb") as f:
         return hashlib.sha256(f.read()).hexdigest()
+
+
+def _transformar_carriles(
+    carriles: list[Carril], movimiento: MovimientoCamara
+) -> list[Carril]:
+    if not movimiento.valido:
+        return []
+    salida = []
+    for carril in carriles:
+        puntos = movimiento.transformar_puntos_referencia_a_actual(carril.poligono)
+        if puntos is None:
+            return []
+        salida.append(Carril(carril.indice, puntos))
+    return salida

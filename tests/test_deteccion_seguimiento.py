@@ -47,6 +47,15 @@ def test_filtros_de_clase_confianza_y_region() -> None:
     assert [(d.clase, d.caja.x1) for d in dets] == [("automovil", 10.0), ("bus", 300.0)]
 
 
+def test_detecciones_arrays_acepta_roi_actual_sin_mutar_cfg() -> None:
+    roi_actual = [(0, 100), (100, 100), (100, 300), (0, 300)]
+    detecciones = detecciones_desde_arrays(
+        [(10, 200, 50, 240), (300, 200, 340, 240)], [0.9, 0.9], [2, 2], CFG, roi_actual
+    )
+    assert [d.caja.x1 for d in detecciones] == [10.0]
+    assert CFG.region_interes != roi_actual
+
+
 def test_clases_configuradas() -> None:
     cfg = dataclasses.replace(CFG, clases=["bus"])
     dets = detecciones_desde_arrays([(10, 200, 50, 240), (300, 200, 360, 250)], [0.9, 0.9], [2, 5], cfg)

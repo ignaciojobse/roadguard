@@ -12,6 +12,7 @@ from typing import Optional
 import pytest
 
 from roadguard.m3_geometria.relaciones import calcular_relaciones, calcular_thw, calcular_ttc
+from roadguard.m3_geometria.trayectorias import HistorialCausal
 from roadguard.tipos import EstadoCinematico
 
 
@@ -67,6 +68,17 @@ def test_velocidad_no_disponible() -> None:
 def test_sin_carril_no_hay_predecesor() -> None:
     rel = {r.id_seguidor: r for r in calcular_relaciones([_estado(1, 0.0, 20.0, carril=None), _estado(2, 20.0, 10.0)], 0, 0.0)}
     assert rel[1].id_predecesor is None
+
+
+def test_estado_sin_carril_no_participa_como_seguidor_ni_predecesor() -> None:
+    hist = HistorialCausal(10.0, confianza_min_carril=0.6)
+    seguidor = hist.actualizar_camino(1, 0, 0.0, (0.0, 0.0), 0, 0.9)
+    ambiguo = hist.actualizar_camino(2, 0, 0.0, (10.0, 0.0), None, 0.5)
+    lider = hist.actualizar_camino(3, 0, 0.0, (20.0, 0.0), 0, 0.9)
+    relaciones = {r.id_seguidor: r for r in calcular_relaciones([seguidor, ambiguo, lider], 0, 0.0)}
+    assert relaciones[1].id_predecesor == 3
+    assert relaciones[3].id_predecesor is None
+    assert relaciones[2].id_predecesor is None
 
 
 def test_sin_calibracion_todo_none() -> None:

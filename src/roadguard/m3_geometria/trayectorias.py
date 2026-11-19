@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from collections import deque
+from dataclasses import replace
 from typing import Optional
 
 from roadguard.m3_geometria.carriles import asignar_carril
@@ -41,9 +42,12 @@ class HistorialCausal:
         min_muestras: int = 3,
         min_duracion: float = 0.3,
         velocidad_max: float = 70.0,
+        confianza_min_carril: float = 0.0,
     ) -> None:
         if fps <= 0:
             raise ValueError("fps debe ser positivo")
+        if not math.isfinite(confianza_min_carril) or not 0.0 <= confianza_min_carril <= 1.0:
+            raise ValueError("confianza_min_carril debe ser finita y estar entre 0 y 1")
         self.fps = fps
         self.proyector = proyector
         self.carriles = carriles or []
@@ -51,19 +55,58 @@ class HistorialCausal:
         self.min_muestras = min_muestras
         self.min_duracion = min_duracion
         self.velocidad_max = velocidad_max
+        self.confianza_min_carril = confianza_min_carril
         self._muestras: dict[int, deque[tuple[float, float, float]]] = {}
         self._t_ultimo: dict[int, float] = {}
+        self._carriles_estimados: dict[int, Optional[int]] = {}
         self.reinicios: list[int] = []
+        self.observaciones_baja_confianza = 0
+        self.cajas_recortadas = 0
 
-    def actualizar(self, track: Track) -> EstadoCinematico:
+    def actualizar(
+        self, track: Track, tamano_imagen: Optional[tuple[int, int]] = None,
+        *, punto_referencia: Optional[tuple[float, float]] = None,
+        geometria_disponible: bool = True,
+    ) -> EstadoCinematico:
         """Incorpora un track y devuelve su estado cinematico en t."""
-        carril, confianza = asignar_carril(track.punto_calzada_px, self.carriles)
+        self._validar_orden(track.id_vehiculo, track.t)
+        punto = track.punto_calzada_px if punto_referencia is None else punto_referencia
+        carril_estimado, confianza = asignar_carril(punto, self.carriles)
+        x1, y1, x2, y2 = track.caja.x1, track.caja.y1, track.caja.x2, track.caja.y2
+        recortada = tamano_imagen is not None and (
+            x1 <= 0 or y1 <= 0 or x2 >= tamano_imagen[0] - 1 or y2 >= tamano_imagen[1] - 1
+        )
+        if not recortada and geometria_disponible:
+            self._carriles_estimados[track.id_vehiculo] = carril_estimado
+        else:
+            carril_estimado = self._carriles_estimados.get(track.id_vehiculo)
+        carril = carril_estimado
+        if recortada or not geometria_disponible:
+            carril = None
+            confianza = 0.0
+        elif confianza < self.confianza_min_carril:
+            carril = None
+            self.observaciones_baja_confianza += 1
+        if recortada:
+            self.cajas_recortadas += 1
+            self._muestras.pop(track.id_vehiculo, None)
+            estado = self.actualizar_camino(
+                track.id_vehiculo, track.cuadro, track.t, None, None, 0.0
+            )
+            return replace(estado, carril_estimado=carril_estimado)
+        if not geometria_disponible:
+            self._muestras.pop(track.id_vehiculo, None)
+            estado = self.actualizar_camino(
+                track.id_vehiculo, track.cuadro, track.t, None, None, 0.0
+            )
+            return replace(estado, carril_estimado=carril_estimado)
         xy = None
         if self.proyector is not None:
-            xy = self.proyector.proyectar(track.punto_calzada_px)
-        return self.actualizar_camino(
+            xy = self.proyector.proyectar(punto)
+        estado = self.actualizar_camino(
             track.id_vehiculo, track.cuadro, track.t, xy, carril, confianza
         )
+        return replace(estado, carril_estimado=carril_estimado)
 
     def actualizar_camino(
         self,
@@ -76,11 +119,7 @@ class HistorialCausal:
     ) -> EstadoCinematico:
         """Igual que `actualizar`, pero con la posicion ya en el plano del
         camino. Lo usan las trayectorias de referencia (highD/NGSIM)."""
-        t_prev = self._t_ultimo.get(id_vehiculo)
-        if t_prev is not None and t <= t_prev:
-            raise ValueError(
-                f"Orden temporal violado para ID {id_vehiculo}: t={t} <= {t_prev} (Paso 2)"
-            )
+        self._validar_orden(id_vehiculo, t)
         self._t_ultimo[id_vehiculo] = t
 
         if xy is None:
@@ -109,6 +148,13 @@ class HistorialCausal:
             id_vehiculo, cuadro, t, x, y, velocidad, carril, confianza_carril, True
         )
 
+    def _validar_orden(self, id_vehiculo: int, t: float) -> None:
+        t_prev = self._t_ultimo.get(id_vehiculo)
+        if t_prev is not None and t <= t_prev:
+            raise ValueError(
+                f"Orden temporal violado para ID {id_vehiculo}: t={t} <= {t_prev} (Paso 2)"
+            )
+
     def purgar(self, t: float, edad_max: Optional[float] = None) -> list[int]:
         """Elimina IDs no observados en `edad_max` s (por defecto 2 ventanas)."""
         edad = 2 * self.ventana if edad_max is None else edad_max
@@ -120,6 +166,7 @@ class HistorialCausal:
     def olvidar(self, id_vehiculo: int) -> None:
         self._muestras.pop(id_vehiculo, None)
         self._t_ultimo.pop(id_vehiculo, None)
+        self._carriles_estimados.pop(id_vehiculo, None)
 
 
 def _ajuste_lineal(

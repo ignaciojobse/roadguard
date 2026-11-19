@@ -28,7 +28,8 @@ COLUMNAS_FIJAS: tuple[str, ...] = (
 PREFIJO_VARIABLE = "variable_"
 PREFIJO_UMBRAL = "umbral_"
 COLUMNAS_TRACKS: tuple[str, ...] = (
-    "cuadro", "id", "clase", "x1", "y1", "x2", "y2", "carril", "confianza"
+    "cuadro", "id", "clase", "x1", "y1", "x2", "y2", "carril", "confianza",
+    "carril_estimado", "centralidad_carril", "apoyo_x", "apoyo_y"
 )
 
 
@@ -109,7 +110,8 @@ class EscritorTracks:
     """Escribe `tracks.csv`: una fila por vehiculo y cuadro (salida opcional).
 
     Columnas: cuadro, id, clase, x1, y1, x2, y2 (pixeles), carril (vacio si
-    no se asigno) y confianza de la deteccion. Sirve para medir mAP e IDF1
+    no se asigno) y confianza de la deteccion. `centralidad_carril` contiene
+    confianza espacial, no una probabilidad. Sirve para medir mAP e IDF1
     contra una referencia externa sin volver a correr el detector.
     """
 
@@ -122,9 +124,10 @@ class EscritorTracks:
         self.n_filas = 0
 
     def escribir(self, tracks: Iterable[Track], estados: Iterable[EstadoCinematico]) -> None:
-        carriles = {e.id_vehiculo: e.carril for e in estados}
+        por_id = {e.id_vehiculo: e for e in estados}
         for tr in tracks:
             c = tr.caja
+            estado = por_id.get(tr.id_vehiculo)
             self._escritor.writerow(
                 {
                     "cuadro": tr.cuadro,
@@ -134,8 +137,12 @@ class EscritorTracks:
                     "y1": round(c.y1, 1),
                     "x2": round(c.x2, 1),
                     "y2": round(c.y2, 1),
-                    "carril": _celda(carriles.get(tr.id_vehiculo)),
+                    "carril": _celda(estado.carril if estado else None),
                     "confianza": round(tr.confianza, 4),
+                    "carril_estimado": _celda((estado.carril_estimado if estado.carril_estimado is not None else estado.carril) if estado else None),
+                    "centralidad_carril": _celda(estado.confianza_carril if estado else None),
+                    "apoyo_x": round(tr.punto_calzada_px[0], 1) if estado and estado.calibrado else "",
+                    "apoyo_y": round(tr.punto_calzada_px[1], 1) if estado and estado.calibrado else "",
                 }
             )
             self.n_filas += 1

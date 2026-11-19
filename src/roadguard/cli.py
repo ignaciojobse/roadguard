@@ -20,6 +20,7 @@ from roadguard.m1_ingesta.config import ErrorConfiguracion, cargar_configuracion
 from roadguard.m1_ingesta.video import ErrorVideo
 from roadguard.m5_salidas.escritor import ErrorSalida
 from roadguard.pipeline import Detector, Pipeline, ResultadoPipeline
+from roadguard.m3_geometria.homografia import ProyectorCamino
 from roadguard.tipos import Configuracion
 
 FabricaDetector = Callable[[Configuracion, argparse.Namespace], Detector]
@@ -46,6 +47,11 @@ def construir_parser() -> argparse.ArgumentParser:
         "--dispositivo", choices=("cpu", "cuda", "mps"), default=None,
         help="Dispositivo de inferencia; por defecto lo elige Ultralytics",
     )
+    p.add_argument("--compensar-camara", action="store_true", help="Compensa movimiento leve de camara")
+    p.add_argument(
+        "--punto-apoyo", choices=("centro_inferior", "longitudinal"),
+        default="centro_inferior", help="Punto de apoyo geometrico del vehiculo",
+    )
     return parser
 
 
@@ -57,8 +63,11 @@ def _detector_yolo(cfg: Configuracion, args: argparse.Namespace) -> Detector:
 
 def procesar(args: argparse.Namespace, fabrica_detector: FabricaDetector) -> ResultadoPipeline:
     cfg = cargar_configuracion(args.config)
+    if args.punto_apoyo == "longitudinal" and not ProyectorCamino(cfg.homografia).disponible:
+        raise ErrorConfiguracion("El apoyo longitudinal requiere una homografia/proyector disponible")
     detector = fabrica_detector(cfg, args)
-    pipeline = Pipeline(cfg, detector, ruta_config=args.config)
+    pipeline = Pipeline(cfg, detector, ruta_config=args.config,
+                        compensar_camara=args.compensar_camara, metodo_apoyo=args.punto_apoyo)
     return pipeline.ejecutar(
         args.video,
         args.salida,

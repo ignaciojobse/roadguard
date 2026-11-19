@@ -67,6 +67,64 @@ def test_carril_inicial_no_es_cambio() -> None:
     assert det.carril_estable(1) == 1
 
 
+def test_muestra_confiable_aislada_no_confirma_cambio() -> None:
+    det = DetectorCambioCarril(0.6, 1.0)
+    obs = [(0, 0.9)] * 26 + [(1, 0.9)] + [(1, 0.1)] * 50
+    assert _secuencia(det, obs) == []
+    assert det.carril_estable(1) == 0
+
+
+@pytest.mark.parametrize(
+    "interrupcion",
+    [
+        [(None, 0.0)],
+        [(0, 0.1)],
+        [(1, 0.1)],
+    ],
+)
+def test_interrupcion_reinicia_permanencia_y_recuperacion_confirma_una_vez(
+    interrupcion,
+) -> None:
+    det = DetectorCambioCarril(0.6, 1.0)
+    obs = (
+        [(0, 0.9)] * 26
+        + [(1, 0.9)] * 10
+        + interrupcion
+        + [(1, 0.9)] * 25
+    )
+    cambios = []
+    for i, (carril, conf) in enumerate(obs):
+        cambio = det.actualizar(1, carril, i / 25, conf)
+        if cambio is not None:
+            cambios.append(cambio)
+    assert cambios == []
+
+    cambio = det.actualizar(1, 1, len(obs) / 25, 0.9)
+    assert cambio is not None
+    assert (cambio.carril_origen, cambio.carril_destino) == (0, 1)
+    assert cambio.t_cruce == pytest.approx(26 / 25)
+    assert cambio.t_confirmacion == pytest.approx(62 / 25)
+
+    cambios_posteriores = []
+    for i in range(len(obs) + 1, len(obs) + 31):
+        cambio = det.actualizar(1, 1, i / 25, 0.9)
+        if cambio is not None:
+            cambios_posteriores.append(cambio)
+    assert cambios_posteriores == []
+
+
+def test_carril_inicial_exige_permanencia_confiable_continua() -> None:
+    det = DetectorCambioCarril(0.6, 1.0)
+    obs = [(1, 0.9)] + [(1, 0.1)] * 50
+    assert _secuencia(det, obs) == []
+    assert det.carril_estable(1) is None
+    for i in range(len(obs), len(obs) + 25):
+        assert det.actualizar(1, 1, i / 25, 0.9) is None
+        assert det.carril_estable(1) is None
+    assert det.actualizar(1, 1, (len(obs) + 25) / 25, 0.9) is None
+    assert det.carril_estable(1) == 1
+
+
 def test_oscilacion_sobre_la_linea_no_confirma() -> None:
     det = DetectorCambioCarril(0.6, 1.0)
     obs = [(0, 0.9)] * 30
@@ -101,3 +159,19 @@ def test_dos_cambios_completos_consecutivos() -> None:
     assert [(c.carril_origen, c.carril_destino) for c in cambios] == [(0, 1), (1, 0)]
     assert cambios[0].t_cruce == pytest.approx(30 / 25)
     assert cambios[1].t_cruce == pytest.approx(70 / 25)
+
+
+def test_ausencia_corta_reloj_candidato_y_preserva_carril_estable() -> None:
+    det = DetectorCambioCarril(0.6, 1.0)
+    for i in range(26):
+        det.actualizar(1, 0, i / 25, 0.9)
+    assert det.carril_estable(1) == 0
+    for i in range(26, 40):
+        det.actualizar(1, 1, i / 25, 0.9)
+    det.interrumpir_ausentes(set())
+    assert det.carril_estable(1) == 0
+    for i in range(40, 65):
+        assert det.actualizar(1, 1, i / 25, 0.9) is None
+    cambio = det.actualizar(1, 1, 65 / 25, 0.9)
+    assert cambio is not None
+    assert cambio.carril_origen == 0 and cambio.carril_destino == 1

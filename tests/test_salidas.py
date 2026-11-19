@@ -20,10 +20,11 @@ from roadguard.m5_salidas.dibujo import (
     COLOR_CAJA,
     anotar_cuadro,
     dibujar_advertencia,
+    dibujar_vehiculo,
     etiqueta_vehiculo,
 )
 from roadguard.m5_salidas.escritor import ErrorSalida, EscritorVideo
-from roadguard.tipos import Caja, Carril, EstadoCinematico, Track
+from roadguard.tipos import Caja, Carril, EstadoCinematico, NivelRiesgo, PuntajeRiesgo, Track
 
 ANCHO, ALTO = 320, 240
 
@@ -44,6 +45,89 @@ def test_etiqueta_con_y_sin_estado() -> None:
     assert etiqueta_vehiculo(_track()) == "ID 7 automovil"
     assert etiqueta_vehiculo(_track(), _estado(carril=1)) == "ID 7 automovil carril 1"
     assert etiqueta_vehiculo(_track(), _estado(carril=None)) == "ID 7 automovil sin carril"
+
+
+@pytest.mark.parametrize(
+    "estado",
+    [
+        _estado(carril=None),
+        EstadoCinematico(7, 0, 0.0, None, None, None, 1, 1.0, False),
+        EstadoCinematico(7, 0, 0.0, None, None, None, 1, 1.0, True),
+    ],
+)
+def test_puntaje_cero_con_geometria_no_evaluable_es_verde_sin_eventos(estado, monkeypatch) -> None:
+    puntaje = PuntajeRiesgo(7, 0.0, 0, NivelRiesgo.VERDE)
+    assert "sin eventos" in etiqueta_vehiculo(_track(), estado, puntaje)
+    colores = []
+    monkeypatch.setattr("roadguard.m5_salidas.dibujo.cv2.rectangle",
+                        lambda *args, **kwargs: colores.append(args[3]))
+    dibujar_vehiculo(_negro(), _track(), estado, puntaje=puntaje)
+    assert colores[0] == COLOR_CAJA
+
+
+def test_carril_estimado_se_muestra() -> None:
+    estado = EstadoCinematico(7, 0, 0.0, None, None, None, None, 0.2, False, 1)
+    assert etiqueta_vehiculo(_track(), estado).endswith("carril 1 (estimado)")
+
+
+def test_leyenda_visible_estable_con_puntajes_vacios_y_no_tapa_advertencia() -> None:
+    original = _negro()
+    estado = _estado(carril=1)
+    advertencia = ADVERTENCIA_SIN_CALIBRACION_CORTA
+    sin_mapa = anotar_cuadro(original, [_track()], [estado], advertencia=advertencia)
+    mapa_vacio = anotar_cuadro(
+        original, [_track()], [estado], advertencia=advertencia, puntajes={}
+    )
+    con_mapa = anotar_cuadro(
+        original, [_track()], [estado], advertencia=advertencia,
+        puntajes={7: PuntajeRiesgo(7, 0, 0, NivelRiesgo.VERDE)},
+    )
+    pie = slice(ALTO - 22, ALTO - 2)
+    assert np.array_equal(mapa_vacio[pie], con_mapa[pie])
+    assert not np.array_equal(sin_mapa[pie], mapa_vacio[pie])
+    assert np.any(np.all(mapa_vacio[pie] == (45, 45, 45), axis=-1))
+    assert np.any(np.all(mapa_vacio[pie] >= (150, 150, 150), axis=-1))
+    alto_franja = dibujar_advertencia(_negro(), advertencia)
+    assert np.array_equal(mapa_vacio[:alto_franja], sin_mapa[:alto_franja])
+    assert not original.any()
+
+
+def test_puntaje_evaluable_muestra_puntaje_y_banda() -> None:
+    cero = PuntajeRiesgo(7, 0.0, 0, NivelRiesgo.VERDE)
+    positivo = PuntajeRiesgo(7, 0.0, 40, NivelRiesgo.AMARILLO)
+    evaluable = EstadoCinematico(7, 0, 0.0, 1.0, 2.0, 5.0, 1, 1.0, True)
+    assert etiqueta_vehiculo(_track(), evaluable, cero).endswith("sin eventos")
+    assert etiqueta_vehiculo(_track(), evaluable, positivo).endswith("puntaje 40 amarillo")
+
+
+def test_puntaje_positivo_reciente_conserva_banda() -> None:
+    estado = _estado(carril=None)
+    puntaje = PuntajeRiesgo(7, 0.0, 40, NivelRiesgo.AMARILLO)
+    texto = etiqueta_vehiculo(_track(), estado, puntaje)
+    assert texto.endswith("puntaje 40 amarillo reciente")
+    anotado = anotar_cuadro(_negro(), [_track()], [estado], puntajes={7: puntaje})
+    assert (anotado[145, 100] == (0, 220, 255)).all()
+
+
+def test_estado_sin_puntaje_conserva_etiqueta_legacy() -> None:
+    assert etiqueta_vehiculo(_track(), EstadoCinematico(
+        7, 0, 0.0, None, None, None, None, 1.0, False
+    )) == "ID 7 automovil sin carril"
+
+
+def test_rotulo_con_caja_negativa_queda_en_imagen(monkeypatch) -> None:
+    import roadguard.m5_salidas.dibujo as dibujo
+
+    original = _negro()
+    anotado = original.copy()
+    coords = []
+    put_text = dibujo.cv2.putText
+    monkeypatch.setattr(dibujo.cv2, "putText", lambda *args, **kwargs: (
+        coords.append(args[2]), put_text(*args, **kwargs)
+    )[1])
+    dibujo.dibujar_vehiculo(anotado, _track(caja=Caja(-40, -30, 20, 15)))
+    assert coords and 0 <= coords[-1][0] < ANCHO and 0 <= coords[-1][1] < ALTO
+    assert not original.any()
 
 
 def test_anotar_no_modifica_el_original_y_dibuja_la_caja() -> None:

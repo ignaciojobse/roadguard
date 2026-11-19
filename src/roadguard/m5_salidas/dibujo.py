@@ -10,9 +10,8 @@ import numpy as np
 from roadguard.tipos import Carril, EstadoCinematico, NivelRiesgo, PuntajeRiesgo, Track
 
 # Colores en BGR (convencion de OpenCV).
-# La caja usa un color neutro cuando no hay puntaje de M4 para el vehiculo;
-# con puntaje toma el color de su banda (RF11).
-COLOR_CAJA = (230, 180, 60)
+# Sin eventos, la caja verde representa la detección, no una evaluación de seguridad.
+COLOR_CAJA = (80, 200, 80)
 COLOR_NIVEL: dict[NivelRiesgo, tuple[int, int, int]] = {
     NivelRiesgo.VERDE: (80, 200, 80),
     NivelRiesgo.AMARILLO: (0, 220, 255),
@@ -36,21 +35,38 @@ def etiqueta_vehiculo(
 ) -> str:
     """Texto sobre la caja: ID, clase, carril y riesgo.
 
-    Sin estado de M3 no se informa carril. Con estado, un vehiculo fuera de
-    todo carril se rotula explicitamente en vez de omitirlo. Con puntaje de
-    M4 se agrega el valor y su banda (RF11). El texto va sin tildes porque
-    las fuentes de OpenCV no las dibujan.
+    Sin estado de M3 no se informa carril. El carril espacial estimado se
+    muestra aunque no sea elegible para reglas; solo se rotula "sin carril"
+    cuando tampoco hay esa estimacion. Sin eventos confirmados no se afirma
+    seguridad. El texto va sin tildes porque OpenCV no las dibuja.
     """
     partes = [f"ID {track.id_vehiculo}", track.clase]
     if estado is not None:
-        partes.append("sin carril" if estado.carril is None else f"carril {estado.carril}")
+        carril_estimado = estado.carril_estimado if estado.carril is None else None
+        if estado.carril is not None:
+            partes.append(f"carril {estado.carril}")
+        elif carril_estimado is not None:
+            partes.append(f"carril {carril_estimado} (estimado)")
+        else:
+            partes.append("sin carril")
     if puntaje is not None:
-        partes.append(f"riesgo {puntaje.puntaje} {puntaje.nivel.value}")
+        geometria_no_evaluable = estado is not None and (
+            estado.carril is None or not estado.calibrado or estado.velocidad is None
+        )
+        if puntaje.puntaje == 0:
+            partes.append("sin eventos")
+        elif estado is None:
+            partes.append(f"riesgo {puntaje.puntaje} {puntaje.nivel.value}")
+        else:
+            etiqueta = f"puntaje {puntaje.puntaje} {puntaje.nivel.value}"
+            if geometria_no_evaluable:
+                etiqueta += " reciente"
+            partes.append(etiqueta)
     return " ".join(partes)
 
 
 def color_por_nivel(puntaje: Optional[PuntajeRiesgo]) -> tuple[int, int, int]:
-    """Color de la caja segun la banda RF11; neutro si no hay puntaje."""
+    """Color según banda RF11; verde para detecciones sin eventos."""
     if puntaje is None:
         return COLOR_CAJA
     return COLOR_NIVEL[puntaje.nivel]
@@ -79,7 +95,7 @@ def dibujar_vehiculo(
     """Dibuja caja, punto de calzada y etiqueta de un vehiculo (en el lugar).
 
     Si no se entrega `color`, se usa el de la banda del puntaje (RF11) o el
-    neutro cuando no hay puntaje.
+    verde de deteccion cuando no hay puntaje.
 
     Las coordenadas fuera de la imagen las recorta OpenCV; una caja que sale
     del cuadro no es un error (vehiculos que entran o salen). La etiqueta no
@@ -125,10 +141,11 @@ def anotar_cuadro(
 
     `estados` y `puntajes` se asocian a `tracks` por `id_vehiculo` y deben
     ser los del mismo cuadro. Un track sin estado se dibuja sin carril; sin
-    puntaje, con el color neutro.
+    puntaje, con el verde de deteccion.
     """
     salida = imagen.copy()
     y_min = 0
+    mostrar_leyenda = puntajes is not None
     if advertencia:
         alto, ancho = salida.shape[:2]
         y_min = _geometria_advertencia(advertencia, ancho, alto)[2]
@@ -140,9 +157,29 @@ def anotar_cuadro(
             salida, track, por_id.get(track.id_vehiculo), y_min=y_min,
             puntaje=puntajes.get(track.id_vehiculo),
         )
+    if mostrar_leyenda:
+        _leyenda(salida)
     if advertencia:
         dibujar_advertencia(salida, advertencia)
     return salida
+
+
+def _leyenda(imagen: np.ndarray) -> None:
+    """Leyenda discreta inferior, sin invadir la franja de advertencia."""
+    texto = "verde = deteccion/sin eventos; est. = carril estimado, no valida alertas"
+    alto, ancho = imagen.shape[:2]
+    escala = 0.35
+    (tw, th), base = cv2.getTextSize(texto, _FUENTE, escala, 1)
+    while tw > ancho - 2 * _MARGEN and escala > 0.15:
+        escala -= 0.025
+        (tw, th), base = cv2.getTextSize(texto, _FUENTE, escala, 1)
+    y = max(th + _MARGEN, alto - base - _MARGEN)
+    x2 = min(ancho - 1, _MARGEN + tw + 2 * _MARGEN)
+    y1 = max(0, y - th - _MARGEN)
+    y2 = min(alto - 1, y + base + _MARGEN)
+    cv2.rectangle(imagen, (_MARGEN, y1), (x2, y2), (45, 45, 45), -1)
+    cv2.putText(imagen, texto, (_MARGEN + _MARGEN, y), _FUENTE, escala,
+                (240, 240, 240), 1, cv2.LINE_AA)
 
 
 def _geometria_advertencia(texto: str, ancho: int, alto: int) -> tuple[float, int, int]:
@@ -163,20 +200,30 @@ def _rotulo(
     y_min: int = 0,
 ) -> None:
     """Texto sobre fondo de color, encima de la caja o dentro si no cabe."""
-    (tw, th), base = cv2.getTextSize(texto, _FUENTE, _ESCALA, _GROSOR)
+    alto, ancho = imagen.shape[:2]
     x, y = esquina
+    escala = _ESCALA
+    max_ancho = max(1, ancho - 2 * _MARGEN)
+    (tw, th), base = cv2.getTextSize(texto, _FUENTE, escala, _GROSOR)
+    while tw > max_ancho and escala > 0.1:
+        escala = max(0.1, escala - 0.05)
+        (tw, th), base = cv2.getTextSize(texto, _FUENTE, escala, _GROSOR)
+    x = min(max(x, 0), max(0, ancho - tw - 2 * _MARGEN))
     if y - th - base - _MARGEN >= y_min:
-        y_base = y - _MARGEN
+        y_base = min(y - _MARGEN, alto - base - 1)
     else:
         y_base = max(y, y_min) + th + 2 * _MARGEN
+    y_base = min(max(y_base, th + _MARGEN), max(th + _MARGEN, alto - base - 1))
+    top = max(0, y_base - th - _MARGEN)
+    bottom = min(alto - 1, y_base + base)
     cv2.rectangle(
         imagen,
-        (x, y_base - th - _MARGEN),
-        (x + tw + 2 * _MARGEN, y_base + base),
+        (x, top),
+        (min(ancho - 1, x + tw + 2 * _MARGEN), bottom),
         color,
         -1,
     )
     cv2.putText(
         imagen, texto, (x + _MARGEN, y_base),
-        _FUENTE, _ESCALA, COLOR_TEXTO, _GROSOR, cv2.LINE_AA,
+        _FUENTE, escala, COLOR_TEXTO, _GROSOR, cv2.LINE_AA,
     )

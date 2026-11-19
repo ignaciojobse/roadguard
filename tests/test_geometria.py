@@ -15,6 +15,13 @@ import pytest
 from roadguard.m3_geometria.homografia import ProyectorCamino
 from roadguard.m3_geometria.trayectorias import HistorialCausal
 from roadguard.tipos import Caja, Carril, Homografia, Track
+from roadguard.tipos import EstadoCinematico
+
+
+def test_carril_estimado_default_none_y_constructor_posicional_compatible() -> None:
+    estado = EstadoCinematico(1, 2, 0.2, None, None, None, 0, 0.8, False)
+    assert estado.carril == 0
+    assert estado.carril_estimado is None
 
 # Trapecio en perspectiva: la base (y=400 px) esta cerca de la camara.
 # Camino: x longitudinal en el sentido de avance (alejandose), y lateral.
@@ -104,3 +111,66 @@ def test_salto_imposible_reinicia_historial() -> None:
     e = hist.actualizar_camino(1, 10, 1.0, (500.0, 0.0), 0, 1.0)
     assert hist.reinicios == [1]
     assert e.velocidad is None
+
+
+def test_confianza_minima_carril_y_validacion(monkeypatch) -> None:
+    import roadguard.m3_geometria.trayectorias as trayectorias
+
+    hist = HistorialCausal(10.0, confianza_min_carril=0.5)
+    monkeypatch.setattr(trayectorias, "asignar_carril", lambda *_: (0, 0.5))
+    igual = hist.actualizar(_track(1, 0, 10.0, 80, 200))
+    monkeypatch.setattr(trayectorias, "asignar_carril", lambda *_: (0, 0.49))
+    menor = hist.actualizar(_track(2, 1, 10.0, 80, 200))
+    assert igual.carril == 0 and igual.confianza_carril == 0.5
+    assert menor.carril is None and menor.confianza_carril == 0.49
+    assert menor.carril_estimado == 0
+    for valor in (-0.1, 1.1, float("nan"), float("inf")):
+        with pytest.raises(ValueError, match="confianza_min_carril"):
+            HistorialCausal(10.0, confianza_min_carril=valor)
+
+
+@pytest.mark.parametrize("caja", [
+    Caja(0, 20, 10, 30), Caja(20, 0, 30, 10),
+    Caja(20, 20, 99, 30), Caja(20, 20, 30, 99),
+])
+def test_caja_recortada_no_proyecta_y_limpia_historial(caja) -> None:
+    hist = HistorialCausal(10.0, ProyectorCamino(HOMOGRAFIA), CARRILES)
+    for i in range(4):
+        hist.actualizar(_track(1, i, 10.0, 100, 300 - i))
+    track = Track(1, 4, 0.4, "automovil", 0.9, caja, caja.punto_calzada)
+    estado = hist.actualizar(track, (100, 100))
+    assert estado.carril is None
+    assert estado.carril_estimado in (None, 0)
+    assert (estado.x_camino, estado.y_camino, estado.velocidad, estado.confianza_carril) == (
+        None, None, None, 0.0
+    )
+    recuperado = hist.actualizar(_track(1, 5, 10.0, 100, 295), (1000, 1000))
+    assert recuperado.velocidad is None
+
+
+def test_caja_recortada_conserva_carril_espacial_estimado(monkeypatch) -> None:
+    import roadguard.m3_geometria.trayectorias as trayectorias
+
+    monkeypatch.setattr(trayectorias, "asignar_carril", lambda *_: (1, 0.9))
+    hist = HistorialCausal(10.0)
+    previo = Track(1, 0, 0.0, "automovil", 0.9, Caja(10, 20, 20, 30), (15, 30))
+    hist.actualizar(previo, (100, 100))
+    track = Track(1, 1, 0.1, "automovil", 0.9, Caja(0, 20, 10, 30), (5, 30))
+    estado = hist.actualizar(track, (100, 100))
+    assert estado.carril is None
+    assert estado.carril_estimado == 1
+    assert estado.confianza_carril == 0.0
+
+
+def test_caja_recortada_fuera_de_orden_no_muta_historial() -> None:
+    hist = HistorialCausal(10.0, ProyectorCamino(HOMOGRAFIA), CARRILES)
+    for i in range(4):
+        hist.actualizar(_track(1, i, 10.0, 100, 300 - i))
+    muestras_antes = list(hist._muestras[1])
+    track = Track(1, 4, 0.3, "automovil", 0.9, Caja(0, 10, 20, 30), (10, 30))
+    with pytest.raises(ValueError, match="Orden temporal"):
+        hist.actualizar(track, (100, 100))
+    assert list(hist._muestras[1]) == muestras_antes
+    assert hist.cajas_recortadas == 0
+    recuperado = hist.actualizar(_track(1, 5, 10.0, 100, 295), (1000, 1000))
+    assert recuperado.velocidad is not None

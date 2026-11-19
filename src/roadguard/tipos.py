@@ -188,6 +188,9 @@ class EstadoCinematico:
     carril: Optional[int]
     confianza_carril: float
     calibrado: bool
+    # Pertenencia espacial estimada para el punto observado. `carril` puede
+    # ser None por no elegibilidad para reglas; eso no implica estar fuera del camino.
+    carril_estimado: Optional[int] = None
 
 
 @dataclass(frozen=True)
