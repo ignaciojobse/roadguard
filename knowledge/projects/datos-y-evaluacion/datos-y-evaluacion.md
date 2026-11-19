@@ -44,3 +44,30 @@ eventos = eventos_referencia(cuadros, Umbrales())          # 195 cercanía · 22
 ```
 
 Para M4: cada `CuadroReferencia` trae `estados` y `relaciones` con el mismo contrato que produce M3, así que el motor de reglas se puede alimentar cuadro a cuadro en orden de `t`.
+
+## Cómo reproducir el F1 de reglas (18-nov)
+
+Desde la raíz. Primero la muestra NGSIM (arriba) y corridas de UA-DETRAC con `--tracks` en `salidas/<secuencia>`; después se miden los defectos reales de la cámara, se degrada NGSIM con ellos y se compara; y aparte se compara el video real contra su anotación.
+
+```bash
+python scripts/medir_ruido_m3.py MVI_39271              # error de posición, pérdidas y cambios de ID
+python scripts/medir_ruido_m3.py MVI_40714              # idem, cola densa
+python scripts/evaluar_reglas.py --semillas 5           # NGSIM degradado: evidencia/reglas/f1_ngsim.json
+python scripts/evaluar_reglas_video.py MVI_39271 MVI_40714   # video real: evidencia/reglas/f1_video.json
+```
+
+- `src/roadguard/m6_evaluacion/degradacion.py`: remuestreo a 25 Hz, error de posición AR(1), pérdidas por cadena de Markov, cambios de ID, y el paso de M3 + M4 en el mismo orden que el pipeline. Los eventos vuelven con el ID original para compararlos con la referencia.
+- `src/roadguard/m6_evaluacion/referencia_video.py`: cajas anotadas → metros, velocidad con ajuste centrado (la referencia puede mirar el futuro), carril con los polígonos del YAML; los IDs del sistema se traducen al ID anotado con el que más cuadros comparten.
+- Además del F1 uno a uno se informa la **fracción con respaldo**: qué parte de las alertas toca un evento real del mismo vehículo y regla.
+- La tolerancia de interrupción de RF7 es parte de la definición de la regla, así que también la usa la referencia; M4 y la referencia coinciden exactamente sobre la trayectoria limpia con cualquier valor.
+
+| Escenario (configuración de los YAML) | Global | Cercanía | Zigzag | Corte |
+|---|---|---|---|---|
+| M4 sobre trayectoria limpia | 1,00 | 1,00 | 1,00 | 1,00 |
+| Sistema sin ruido (M3 + M4) | 0,89 | 0,91 | 0,55 | 0,67 |
+| **NGSIM con defectos de MVI_39271** | **0,80** | **0,82** | **0,61** | **0,62** |
+| NGSIM con defectos de la cola densa | 0,51 | 0,53 | 0,36 | 0,34 |
+| Definición original, defectos de MVI_39271 | 0,54 | 0,54 | 0,40 | 0,51 |
+| **Video real MVI_39271** (17 eventos de referencia) | **0,65** | 0,55 | 0,67 | 1,00 |
+
+Límites: la referencia en video comparte la homografía con el sistema, así que no juzga la calibración; un minuto de video da pocos eventos; NGSIM es autopista a 10 Hz y se interpola; y el ruido se aplica a cada vehículo por separado, sin oclusiones que dependan de la geometría.
