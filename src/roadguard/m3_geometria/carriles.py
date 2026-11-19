@@ -75,7 +75,7 @@ class DetectorCambioCarril:
         e = self._estados.get(id_vehiculo)
         if carril is None:
             if e is not None:
-                e.t_estable_inicio = None
+                e.candidato = e.t_cruce = e.t_estable_inicio = None
             return None
         if e is None:
             e = self._estados.setdefault(id_vehiculo, _EstadoCarril())

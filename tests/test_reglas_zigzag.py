@@ -39,6 +39,45 @@ def test_racha_prolongada_no_duplica_evento():
     assert d.actualizar(11.0, []) == []
 
 
+def test_ventana_borde_y_cruces_demora_variable_con_intermedios_vacios():
+    d = DetectorZigzag()
+    d.actualizar(1.0, [_cambio(0.0)])
+    assert d.actualizar(10.2, []) == []
+    assert len(d.actualizar(10.5, [_cambio(10.0, 1, 0, latencia=0.5)])) == 1
+
+
+def test_ventana_excluye_cruce_ligeramente_fuera_del_borde():
+    d = DetectorZigzag()
+    d.actualizar(1.0, [_cambio(0.0)])
+    d.actualizar(10.2, [])
+    assert d.actualizar(10.5, [_cambio(10.00001, 1, 0, latencia=0.49)]) == []
+
+
+def test_confirmacion_tardia_no_purga_cruces_por_reloj_actual():
+    d = DetectorZigzag()
+    d.actualizar(1.0, [_cambio(0.0)])
+    d.actualizar(10.2, [])
+    d.actualizar(11.0, [])
+    assert len(d.actualizar(12.5, [_cambio(9.5, 1, 0, latencia=3.0)])) == 1
+
+
+def test_historial_racha_acotado_sin_duplicar_evento_ni_alterar_variables():
+    d = DetectorZigzag()
+    evento = None
+    for i in range(25):
+        cruza = float(i) * 0.5
+        out = d.actualizar(
+            cruza + 0.1,
+            [_cambio(cruza, i % 2, (i + 1) % 2, latencia=0.1)],
+        )
+        if out:
+            evento = out[0]
+        assert len(d._rachas[1].cruces) <= d.umbrales.zigzag_cambios_min
+    assert evento is not None
+    assert evento.variables["n_cambios"] == 2
+    assert all(d.actualizar(12.6 + i * 0.1, []) == [] for i in range(3))
+
+
 def test_racha_nueva_tras_cerrar_la_anterior():
     d = DetectorZigzag()
     d.actualizar(1.0, [_cambio(0.0)])

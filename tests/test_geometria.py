@@ -80,6 +80,15 @@ def test_sin_homografia_campos_metricos_none() -> None:
         assert e.carril == 0  # el carril se asigna en pixeles: no depende de calibracion
 
 
+def test_fuera_de_carril_no_reutiliza_asignacion_anterior() -> None:
+    hist = HistorialCausal(25.0, ProyectorCamino(HOMOGRAFIA), CARRILES)
+    dentro = hist.actualizar(_track(1, 0, 25.0, 100, 300))
+    assert dentro.carril == 0
+    fuera = hist.actualizar(_track(1, 1, 25.0, 400, 300))
+    assert fuera.carril is None
+    assert fuera.carril_estimado is None
+
+
 def test_velocidad_constante_recuperada() -> None:
     hist = HistorialCausal(10.0)
     for i in range(20):
@@ -113,7 +122,7 @@ def test_salto_imposible_reinicia_historial() -> None:
     assert e.velocidad is None
 
 
-def test_confianza_minima_carril_y_validacion(monkeypatch) -> None:
+def test_centralidad_baja_no_invalida_carril_y_umbral_se_valida(monkeypatch) -> None:
     import roadguard.m3_geometria.trayectorias as trayectorias
 
     hist = HistorialCausal(10.0, confianza_min_carril=0.5)
@@ -122,8 +131,9 @@ def test_confianza_minima_carril_y_validacion(monkeypatch) -> None:
     monkeypatch.setattr(trayectorias, "asignar_carril", lambda *_: (0, 0.49))
     menor = hist.actualizar(_track(2, 1, 10.0, 80, 200))
     assert igual.carril == 0 and igual.confianza_carril == 0.5
-    assert menor.carril is None and menor.confianza_carril == 0.49
+    assert menor.carril == 0 and menor.confianza_carril == 0.49
     assert menor.carril_estimado == 0
+    assert hist.observaciones_baja_confianza == 1
     for valor in (-0.1, 1.1, float("nan"), float("inf")):
         with pytest.raises(ValueError, match="confianza_min_carril"):
             HistorialCausal(10.0, confianza_min_carril=valor)

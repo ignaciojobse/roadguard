@@ -102,7 +102,9 @@ def test_interrupcion_reinicia_permanencia_y_recuperacion_confirma_una_vez(
     cambio = det.actualizar(1, 1, len(obs) / 25, 0.9)
     assert cambio is not None
     assert (cambio.carril_origen, cambio.carril_destino) == (0, 1)
-    assert cambio.t_cruce == pytest.approx(26 / 25)
+    assert cambio.t_cruce == pytest.approx(
+        (37 / 25) if interrupcion[0][0] is None else 26 / 25
+    )
     assert cambio.t_confirmacion == pytest.approx(62 / 25)
 
     cambios_posteriores = []
@@ -139,6 +141,16 @@ def test_cruce_breve_no_confirma() -> None:
     det = DetectorCambioCarril(0.6, 1.0)
     obs = [(0, 0.9)] * 30 + [(1, 0.9)] * 15 + [(0, 0.9)] * 30
     assert _secuencia(det, obs) == []
+
+
+def test_carril_none_cancela_candidato_y_reinicia_t_cruce() -> None:
+    det = DetectorCambioCarril(confianza_min=0.0, permanencia=1.0)
+    for t, carril in [(0.0, 0), (1.0, 0), (1.1, 1), (1.5, 1), (1.6, None),
+                      (1.8, 1), (2.7, 1), (2.81, 1)]:
+        cambio = det.actualizar(7, carril, t)
+    assert cambio is not None
+    assert cambio.t_cruce == pytest.approx(1.8)
+    assert cambio.t_confirmacion == pytest.approx(2.81)
 
 
 def test_cruces_repetidos_y_breves_no_confirman() -> None:

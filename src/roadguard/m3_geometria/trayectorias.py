@@ -84,8 +84,9 @@ class HistorialCausal:
         if recortada or not geometria_disponible:
             carril = None
             confianza = 0.0
-        elif confianza < self.confianza_min_carril:
-            carril = None
+        elif carril_estimado is not None and confianza < self.confianza_min_carril:
+            # La centralidad describe la posicion dentro del poligono; no
+            # invalida la pertenencia geometrica al carril.
             self.observaciones_baja_confianza += 1
         if recortada:
             self.cajas_recortadas += 1

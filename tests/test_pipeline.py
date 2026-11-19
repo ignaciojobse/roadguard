@@ -198,24 +198,78 @@ def test_pipeline_sin_calibracion_sigue_sin_eventos(tmp_path) -> None:
     assert primero[1, :].any(axis=-1).all()
 
 
-@pytest.mark.parametrize(
-    ("recortadas", "fragmento"),
-    [(False, "confianza de carril baja excluidas"), (True, "cajas recortadas excluidas")],
-)
-def test_pipeline_descarta_geometria_no_confiable_y_conserva_tracks(
-    tmp_path, recortadas, fragmento
-) -> None:
+def test_pipeline_centralidad_baja_conserva_carril_y_habilita_rf7(tmp_path) -> None:
+    video = _video(tmp_path)
+    cfg = configuracion_desde_dict(_config(calibrada=True))
+    salida = str(tmp_path / "lowconf")
+    resultado = Pipeline(cfg, DetectorGeometriaNoConfiable(False)).ejecutar(
+        video, salida, escribir_video=False, escribir_tracks=True
+    )
+    _, filas, _ = _leer_salidas(salida)
+    assert resultado.resumen.calibrado is True
+    assert len(filas) == 1 and filas[0]["regla"] == "cercania_peligrosa"
+    assert any("centralidad de carril baja (diagnostica; no excluidas" in a
+               for a in resultado.resumen.advertencias)
+    with open(os.path.join(salida, "tracks.csv"), encoding="utf-8", newline="") as f:
+        tracks = list(csv.DictReader(f))
+    assert tracks and {r["carril"] for r in tracks} == {"0"}
+    assert all(0.0 <= float(r["centralidad_carril"]) < 0.6 for r in tracks)
+
+
+def test_pipeline_entrega_cambio_geometrico_bajo_centralidad_a_motor(tmp_path) -> None:
+    """M3 confirma por pertenencia persistente; no filtra por centralidad."""
+    from roadguard.tipos import Deteccion
+
+    class DetectorCambio:
+        version_modelo = "secuencia geometrica sintetica"
+
+        def __init__(self):
+            self.i = 0
+
+        def detectar(self, imagen):
+            centro = 139 if self.i < 30 else 141
+            self.i += 1
+            return [Deteccion("automovil", 0.9, Caja(centro - 10, 90, centro + 10, 120))]
+
+    class MotorCaptura:
+        def __init__(self):
+            self.cambios = []
+
+        def actualizar(self, t, estados, relaciones, cambios):
+            self.cambios.extend(cambios)
+            return [], {}
+
+        def finalizar(self):
+            return []
+
+    datos = _config(calibrada=True)
+    datos["carriles"][0]["poligono"] = [[0, 0], [140, 0], [140, ALTO], [0, ALTO]]
+    datos["carriles"][1]["poligono"] = [[140, 0], [ANCHO, 0], [ANCHO, ALTO], [140, ALTO]]
+    datos["confianza_min_carril"] = 0.6
+    cfg = configuracion_desde_dict(datos)
+    motor = MotorCaptura()
+    Pipeline(cfg, DetectorCambio(), motor=motor).ejecutar(
+        _video(tmp_path, 60), str(tmp_path / "cambio-geometrico"),
+        escribir_video=False,
+    )
+    assert len(motor.cambios) == 1
+    cambio = motor.cambios[0]
+    assert (cambio.carril_origen, cambio.carril_destino) == (0, 1)
+    assert cambio.t_confirmacion - cambio.t_cruce >= 1.0
+
+
+def test_pipeline_descarta_cajas_recortadas_y_conserva_tracks(tmp_path) -> None:
     # La escena dura mas que los 2 s de persistencia: sin el gate produciria RF7.
     video = _video(tmp_path)
     cfg = configuracion_desde_dict(_config(calibrada=True))
-    salida = str(tmp_path / ("recortadas" if recortadas else "lowconf"))
-    resultado = Pipeline(cfg, DetectorGeometriaNoConfiable(recortadas)).ejecutar(
+    salida = str(tmp_path / "recortadas")
+    resultado = Pipeline(cfg, DetectorGeometriaNoConfiable(True)).ejecutar(
         video, salida, escribir_video=False, escribir_tracks=True
     )
     _, filas, resumen = _leer_salidas(salida)
     assert resultado.resumen.calibrado is True
     assert filas == []
-    assert any(fragmento in a for a in resultado.resumen.advertencias)
+    assert any("cajas recortadas excluidas" in a for a in resultado.resumen.advertencias)
     assert resumen["ejecucion"]["n_eventos"]["cercania_peligrosa"] == 0
     with open(os.path.join(salida, "tracks.csv"), encoding="utf-8", newline="") as f:
         tracks = list(csv.DictReader(f))
@@ -400,9 +454,9 @@ def test_cam_fallo_y_recuperacion_actualiza_movimiento_y_puntos(tmp_path, monkey
     assert failed.carril_estimado == motor.estados[1][1].carril_estimado
     assert motor.estados[3][1].velocidad is None
     from roadguard.m5_salidas.dibujo import etiqueta_vehiculo
-    assert f"carril {failed.carril_estimado} (estimado)" in etiqueta_vehiculo(
+    assert etiqueta_vehiculo(
         Track(1, 2, 2 / FPS, "automovil", 0.9, Caja(60, 14, 101, 45), (80, 45)), failed
-    )
+    ).endswith("sin carril")
     with open(resultado.ruta_tracks, newline="", encoding="utf-8") as f:
         filas = list(csv.DictReader(f))
     assert filas and all(float(f["x1"]) >= 0 for f in filas)

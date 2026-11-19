@@ -271,8 +271,10 @@ class Pipeline:
             metadatos.fps, self.proyector, self.cfg.carriles,
             confianza_min_carril=self.cfg.confianza_min_carril,
         )
+        # La centralidad del poligono es diagnostica, no certeza de deteccion:
+        # los cambios se confirman por pertenencia geometrica persistente.
         cambios_carril = DetectorCambioCarril(
-            self.cfg.confianza_min_carril, self.cfg.permanencia_cambio_carril
+            0.0, self.cfg.permanencia_cambio_carril
         )
         acumulados: dict[int, _Acumulado] = {}
         eventos: list[Evento] = []
@@ -336,7 +338,8 @@ class Pipeline:
             )
         if historial.observaciones_baja_confianza:
             advertencias.append(
-                f"{historial.observaciones_baja_confianza} observaciones con confianza de carril baja excluidas"
+                f"{historial.observaciones_baja_confianza} observaciones con centralidad de carril "
+                "baja (diagnostica; no excluidas por centralidad)"
             )
         if historial.cajas_recortadas:
             advertencias.append(

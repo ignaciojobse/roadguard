@@ -35,18 +35,14 @@ def etiqueta_vehiculo(
 ) -> str:
     """Texto sobre la caja: ID, clase, carril y riesgo.
 
-    Sin estado de M3 no se informa carril. El carril espacial estimado se
-    muestra aunque no sea elegible para reglas; solo se rotula "sin carril"
-    cuando tampoco hay esa estimacion. Sin eventos confirmados no se afirma
-    seguridad. El texto va sin tildes porque OpenCV no las dibuja.
+    Sin estado de M3 o sin una asignacion geometrica valida no se informa
+    carril. Sin eventos confirmados no se afirma seguridad. El texto va sin
+    tildes porque OpenCV no las dibuja.
     """
     partes = [f"ID {track.id_vehiculo}", track.clase]
     if estado is not None:
-        carril_estimado = estado.carril_estimado if estado.carril is None else None
         if estado.carril is not None:
             partes.append(f"carril {estado.carril}")
-        elif carril_estimado is not None:
-            partes.append(f"carril {carril_estimado} (estimado)")
         else:
             partes.append("sin carril")
     if puntaje is not None:
@@ -166,7 +162,7 @@ def anotar_cuadro(
 
 def _leyenda(imagen: np.ndarray) -> None:
     """Leyenda discreta inferior, sin invadir la franja de advertencia."""
-    texto = "verde = deteccion/sin eventos; est. = carril estimado, no valida alertas"
+    texto = "verde = deteccion/sin eventos; centralidad de carril es diagnostica"
     alto, ancho = imagen.shape[:2]
     escala = 0.35
     (tw, th), base = cv2.getTextSize(texto, _FUENTE, escala, 1)

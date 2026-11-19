@@ -65,12 +65,14 @@ def test_puntaje_cero_con_geometria_no_evaluable_es_verde_sin_eventos(estado, mo
     assert colores[0] == COLOR_CAJA
 
 
-def test_carril_estimado_se_muestra() -> None:
+def test_carril_cacheado_no_se_muestra_como_valido() -> None:
     estado = EstadoCinematico(7, 0, 0.0, None, None, None, None, 0.2, False, 1)
-    assert etiqueta_vehiculo(_track(), estado).endswith("carril 1 (estimado)")
+    assert etiqueta_vehiculo(_track(), estado).endswith("sin carril")
 
 
-def test_leyenda_visible_estable_con_puntajes_vacios_y_no_tapa_advertencia() -> None:
+def test_leyenda_visible_estable_con_puntajes_vacios_y_no_tapa_advertencia(monkeypatch) -> None:
+    import roadguard.m5_salidas.dibujo as dibujo
+
     original = _negro()
     estado = _estado(carril=1)
     advertencia = ADVERTENCIA_SIN_CALIBRACION_CORTA
@@ -87,6 +89,13 @@ def test_leyenda_visible_estable_con_puntajes_vacios_y_no_tapa_advertencia() -> 
     assert not np.array_equal(sin_mapa[pie], mapa_vacio[pie])
     assert np.any(np.all(mapa_vacio[pie] == (45, 45, 45), axis=-1))
     assert np.any(np.all(mapa_vacio[pie] >= (150, 150, 150), axis=-1))
+    textos = []
+    put_text = dibujo.cv2.putText
+    monkeypatch.setattr(dibujo.cv2, "putText", lambda imagen, texto, *args, **kwargs: (
+        textos.append(texto), put_text(imagen, texto, *args, **kwargs)
+    )[1])
+    dibujo._leyenda(_negro())
+    assert any("centralidad de carril es diagnostica" in texto for texto in textos)
     alto_franja = dibujar_advertencia(_negro(), advertencia)
     assert np.array_equal(mapa_vacio[:alto_franja], sin_mapa[:alto_franja])
     assert not original.any()

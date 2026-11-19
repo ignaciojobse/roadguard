@@ -70,15 +70,17 @@ def test_sin_carril_no_hay_predecesor() -> None:
     assert rel[1].id_predecesor is None
 
 
-def test_estado_sin_carril_no_participa_como_seguidor_ni_predecesor() -> None:
+def test_centralidad_baja_no_bloquea_relaciones_y_sin_carril_si() -> None:
     hist = HistorialCausal(10.0, confianza_min_carril=0.6)
     seguidor = hist.actualizar_camino(1, 0, 0.0, (0.0, 0.0), 0, 0.9)
-    ambiguo = hist.actualizar_camino(2, 0, 0.0, (10.0, 0.0), None, 0.5)
-    lider = hist.actualizar_camino(3, 0, 0.0, (20.0, 0.0), 0, 0.9)
-    relaciones = {r.id_seguidor: r for r in calcular_relaciones([seguidor, ambiguo, lider], 0, 0.0)}
-    assert relaciones[1].id_predecesor == 3
-    assert relaciones[3].id_predecesor is None
+    centralidad_baja = hist.actualizar_camino(2, 0, 0.0, (10.0, 0.0), 0, 0.5)
+    fuera_carril = hist.actualizar_camino(3, 0, 0.0, (20.0, 0.0), None, 0.0)
+    relaciones = {r.id_seguidor: r for r in calcular_relaciones(
+        [seguidor, centralidad_baja, fuera_carril], 0, 0.0
+    )}
+    assert relaciones[1].id_predecesor == 2
     assert relaciones[2].id_predecesor is None
+    assert relaciones[3].id_predecesor is None
 
 
 def test_sin_calibracion_todo_none() -> None:
