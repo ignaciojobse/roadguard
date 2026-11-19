@@ -1,0 +1,27 @@
+{
+  "secuencia": "MVI_40714",
+  "corrida": "/Users/gricci/Desktop/PDI/roadguard/salidas/MVI_40714",
+  "fps": 25.0,
+  "region": "region_interes",
+  "posicion": {
+    "n_pares": 10729,
+    "sesgo_x_m": 0.2,
+    "sigma_x_m": 0.362,
+    "sesgo_y_m": -0.025,
+    "sigma_y_m": 0.079,
+    "autocorrelacion_x": 0.983,
+    "autocorrelacion_y": 0.938,
+    "p95_abs_x_m": 0.732,
+    "p95_abs_y_m": 0.3
+  },
+  "perdidas": {
+    "fraccion_perdida": 0.4044,
+    "duracion_media_hueco_s": 7.877,
+    "n_huecos": 37
+  },
+  "identidad": {
+    "cambios_id": 0,
+    "segundos_vehiculo": 720.6,
+    "cambios_id_por_vehiculo_s": 0.0
+  }
+}

@@ -1,0 +1,12 @@
+Cuadros procesados: 1570
+FPS de procesamiento: 64.53 (video a 25.00)
+Eventos por regla:
+  cercania_peligrosa: 10
+  zigzag: 1
+  corte_de_carril: 3
+Advertencia: RF7 no evaluable para uno o mas vehiculos: calibracion, observaciones o metricas no disponibles/invalidas
+Salidas:
+  salidas/MVI_39271/anotado.mp4
+  salidas/MVI_39271/eventos.csv
+  salidas/MVI_39271/resumen.json
+  salidas/MVI_39271/tracks.csv

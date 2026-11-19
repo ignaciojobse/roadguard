@@ -1,0 +1,65 @@
+{
+  "tolerancia_s": 1.0,
+  "secuencias": [
+    {
+      "secuencia": "MVI_39271",
+      "calibrada": true,
+      "corrida": "salidas/MVI_39271",
+      "eventos_referencia": {
+        "cercania": 12,
+        "zigzag": 2,
+        "corte": 3
+      },
+      "eventos_sistema": {
+        "cercania": 10,
+        "corte": 3,
+        "zigzag": 1
+      },
+      "por_regla": {
+        "cercania": {
+          "vp": 6,
+          "fp": 4,
+          "fn": 6,
+          "precision": 0.6,
+          "recobrado": 0.5,
+          "f1": 0.5455
+        },
+        "zigzag": {
+          "vp": 1,
+          "fp": 0,
+          "fn": 1,
+          "precision": 1.0,
+          "recobrado": 0.5,
+          "f1": 0.6667
+        },
+        "corte": {
+          "vp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recobrado": 1.0,
+          "f1": 1.0
+        }
+      },
+      "global": {
+        "vp": 10,
+        "fp": 4,
+        "fn": 7,
+        "precision": 0.7143,
+        "recobrado": 0.5882,
+        "f1": 0.6452
+      },
+      "con_respaldo": 0.7143
+    },
+    {
+      "secuencia": "MVI_40714",
+      "calibrada": true,
+      "corrida": "salidas/MVI_40714",
+      "eventos_referencia": {},
+      "eventos_sistema": {},
+      "por_regla": {},
+      "global": null,
+      "con_respaldo": null
+    }
+  ]
+}
