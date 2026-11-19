@@ -60,6 +60,10 @@ def escalar_config(datos: dict, factor: float) -> dict:
     homografia = datos.get("homografia")
     if homografia and homografia.get("puntos_imagen"):
         homografia["puntos_imagen"] = _escalar_puntos(homografia["puntos_imagen"], factor)
+    camara = datos.get("camara")
+    if camara and camara.get("resolucion_referencia"):
+        ancho, alto = camara["resolucion_referencia"]
+        camara["resolucion_referencia"] = [round(ancho * factor), round(alto * factor)]
     return datos
 
 

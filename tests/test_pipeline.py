@@ -27,6 +27,7 @@ from roadguard.m5_salidas.exportar import COLUMNAS_FIJAS, COLUMNAS_TRACKS
 from roadguard.pipeline import MotorCercania, Pipeline, nivel_por_puntaje
 from roadguard.m3_geometria.movimiento import MovimientoCamara
 from roadguard.tipos import Caja, Deteccion, NivelRiesgo, Track, Umbrales
+from dataclasses import replace
 
 ANCHO, ALTO, FPS, N_CUADROS = 320, 320, 25.0, 75
 # Escala de la calibracion sintetica: 0,2 m por pixel, x_camino = y_px * 0,2.
@@ -361,10 +362,12 @@ def test_cli_flags_nuevos_y_longitudinal_sin_homografia(tmp_path, capsys) -> Non
     parser = cli.construir_parser()
     base = ["procesar", "--video", "v.mp4", "--config", "c.yaml", "--salida", "s"]
     defaults = parser.parse_args(base)
-    assert defaults.compensar_camara is False
-    assert defaults.punto_apoyo == "centro_inferior"
+    assert defaults.compensar_camara is None
+    assert defaults.punto_apoyo is None
     explicitos = parser.parse_args(base + ["--compensar-camara", "--punto-apoyo", "longitudinal"])
     assert explicitos.compensar_camara is True and explicitos.punto_apoyo == "longitudinal"
+    inversos = parser.parse_args(base + ["--sin-compensar-camara", "--punto-apoyo", "centro_inferior"])
+    assert inversos.compensar_camara is False and inversos.punto_apoyo == "centro_inferior"
     ruta_cfg = _escribir_yaml(tmp_path, _config(calibrada=False))
     salida = tmp_path / "no-salida"
     codigo = cli.main(
@@ -389,6 +392,81 @@ def test_cli_flags_nuevos_y_longitudinal_sin_homografia(tmp_path, capsys) -> Non
     assert geo["compensar_camara"] is True and geo["metodo_apoyo"] == "longitudinal"
 
 
+def test_cli_validar_no_crea_detector_ni_salidas(tmp_path, capsys) -> None:
+    ruta_cfg = _escribir_yaml(tmp_path, _config(calibrada=False))
+    video = _video(tmp_path, 1)
+    assert cli.main(["validar", "--video", video, "--config", ruta_cfg],
+                    fabrica_detector=lambda *_: pytest.fail("no debe crear detector")) == 0
+    assert "RF9" in capsys.readouterr().out
+    assert set(tmp_path.iterdir()) == {tmp_path / "camara.yaml", tmp_path / "sintetico.mp4"}
+
+
+def test_resolution_mismatch_rechazada_antes_de_fabrica_y_salida(tmp_path) -> None:
+    datos = _config(calibrada=True)
+    datos["camara"] = {"resolucion_referencia": [999, 999]}
+    ruta_cfg = _escribir_yaml(tmp_path, datos)
+    salida = tmp_path / "no-creada"
+    with pytest.raises(ValueError, match="distinta"):
+        cli.procesar(cli.construir_parser().parse_args([
+            "procesar", "--video", _video(tmp_path, 1), "--config", ruta_cfg,
+            "--salida", str(salida),
+        ]), lambda *_: pytest.fail("la fabrica debe ejecutarse despues de validar resolucion"))
+    assert not salida.exists()
+
+
+def test_pipeline_constructor_usa_perfil_directamente(tmp_path) -> None:
+    from roadguard.tipos import ProcesamientoGeometria
+    video = _video(tmp_path, 1)
+    cfg = replace(configuracion_desde_dict(_config(calibrada=True)),
+                  procesamiento_geometria=ProcesamientoGeometria(True, "longitudinal"))
+    resultado = Pipeline(cfg, DetectorFalso()).ejecutar(video, str(tmp_path / "perfil-directo"), escribir_video=False)
+    geo = resultado.resumen.parametros["procesamiento_geometria"]
+    assert geo["compensar_camara"] is True
+    assert geo["metodo_apoyo"] == "longitudinal"
+
+
+def test_validar_longitudinal_sin_proyector_falla(tmp_path, capsys) -> None:
+    datos = _config(calibrada=False)
+    datos["procesamiento_geometria"] = {"metodo_apoyo": "longitudinal"}
+    ruta_cfg = _escribir_yaml(tmp_path, datos)
+    assert cli.main(["validar", "--video", _video(tmp_path, 1), "--config", ruta_cfg]) == 1
+    assert "requiere una homografia" in capsys.readouterr().err
+
+
+def test_politica_cli_se_registra_en_resumen(tmp_path) -> None:
+    datos = _config(calibrada=True)
+    ruta_cfg = _escribir_yaml(tmp_path, datos)
+    politica = tmp_path / "politica.yaml"
+    politica.write_text("umbrales:\n  cercania_thw_max: 1.7\n", encoding="utf-8")
+    salida = tmp_path / "resultado"
+    assert cli.main([
+        "procesar", "--video", _video(tmp_path, 1), "--config", ruta_cfg,
+        "--salida", str(salida), "--sin-video", "--politica", str(politica),
+    ], fabrica_detector=lambda *_: DetectorFalso()) == 0
+    import hashlib
+    import json
+    resumen = json.loads((salida / "resumen.json").read_text(encoding="utf-8"))["ejecucion"]["parametros"]["politica"]
+    assert resumen["ruta"] == str(politica)
+    assert resumen["sha256"] == hashlib.sha256(politica.read_bytes()).hexdigest()
+    assert resumen["umbrales_efectivos"]["cercania_thw_max"] == 1.7
+
+
+def test_cli_override_geometria_invierte_perfil(tmp_path) -> None:
+    datos = _config(calibrada=True)
+    datos["procesamiento_geometria"] = {"compensar_camara": True, "metodo_apoyo": "longitudinal"}
+    ruta_cfg = _escribir_yaml(tmp_path, datos)
+    salida = tmp_path / "override"
+    assert cli.main([
+        "procesar", "--video", _video(tmp_path, 1), "--config", ruta_cfg,
+        "--salida", str(salida), "--sin-video", "--sin-compensar-camara",
+        "--punto-apoyo", "centro_inferior",
+    ], fabrica_detector=lambda *_: DetectorFalso()) == 0
+    import json
+    geo = json.loads((salida / "resumen.json").read_text(encoding="utf-8"))["ejecucion"]["parametros"]["procesamiento_geometria"]
+    assert geo["compensar_camara"] is False
+    assert geo["metodo_apoyo"] == "centro_inferior"
+
+
 def test_pipeline_rechaza_metodo_apoyo_desconocido() -> None:
     cfg = configuracion_desde_dict(_config(calibrada=False))
     with pytest.raises(ValueError, match="metodo_apoyo"):
@@ -396,7 +474,8 @@ def test_pipeline_rechaza_metodo_apoyo_desconocido() -> None:
 
 
 def test_cam_fallo_y_recuperacion_actualiza_movimiento_y_puntos(tmp_path, monkeypatch) -> None:
-    import roadguard.pipeline as modulo
+    import roadguard.m3_geometria.procesador as modulo
+    import roadguard.pipeline as modulo_pipeline
 
     traslada = np.array([[1., 0., 8.], [0., 1., 4.], [0., 0., 1.]])
     identidad = np.eye(3)
@@ -413,16 +492,13 @@ def test_cam_fallo_y_recuperacion_actualiza_movimiento_y_puntos(tmp_path, monkey
     def anotar(imagen, tracks, estados, carriles, advertencia, puntajes):
         anotaciones.append((list(carriles), advertencia))
         return imagen.copy()
-    monkeypatch.setattr(modulo, "anotar_cuadro", anotar)
+    monkeypatch.setattr(modulo_pipeline, "anotar_cuadro", anotar)
 
     video = _video(tmp_path, 4)
     cfg = configuracion_desde_dict(_config(calibrada=True))
     class DetectorRoi(DetectorFalso):
         def __init__(self):
             super().__init__()
-            self.rois = []
-        def actualizar_region_interes(self, roi):
-            self.rois.append(roi)
     detector = DetectorRoi()
     class MotorCaptura:
         def __init__(self): self.estados = {}
@@ -438,9 +514,6 @@ def test_cam_fallo_y_recuperacion_actualiza_movimiento_y_puntos(tmp_path, monkey
     assert (geo["cuadros_validos"], geo["cuadros_invalidos"]) == (3, 1)
     assert any("frame negro" in a for a in resultado.resumen.advertencias)
     assert detector.llamadas == 4
-    assert detector.rois[0] == cfg.region_interes
-    assert detector.rois[1][0] == pytest.approx((8.0, 4.0))
-    assert len(detector.rois) == 3
     assert [bool(w and "COMPENSACION EN ESPERA" in w) for _, w in anotaciones] == [False, False, True, False]
     assert anotaciones[1][0][0].poligono[0] == pytest.approx((8.0, 4.0))
     assert anotaciones[2][0] == []
@@ -465,7 +538,7 @@ def test_cam_fallo_y_recuperacion_actualiza_movimiento_y_puntos(tmp_path, monkey
 
 
 def test_longitudinal_sin_compensacion_usa_helper_y_preserva_bbox(tmp_path, monkeypatch) -> None:
-    import roadguard.pipeline as modulo
+    import roadguard.m3_geometria.procesador as modulo
 
     def helper(caja, proyector, matriz=None):
         return caja.x1 + 3.0, caja.y2 - 2.0
@@ -486,7 +559,7 @@ def test_longitudinal_sin_compensacion_usa_helper_y_preserva_bbox(tmp_path, monk
 
 
 def test_longitudinal_helper_none_no_centroid_fallback(tmp_path, monkeypatch) -> None:
-    import roadguard.pipeline as modulo
+    import roadguard.m3_geometria.procesador as modulo
     monkeypatch.setattr(modulo, "estimar_apoyo_longitudinal", lambda *_: None)
     cfg = configuracion_desde_dict(_config(calibrada=True))
     salida = tmp_path / "helper-none"
@@ -499,7 +572,7 @@ def test_longitudinal_helper_none_no_centroid_fallback(tmp_path, monkeypatch) ->
 
 
 def test_cam_fallo_entrega_evento_cerrado_del_motor(tmp_path, monkeypatch) -> None:
-    import roadguard.pipeline as modulo
+    import roadguard.m3_geometria.procesador as modulo
     from roadguard.tipos import Evento, Regla
     ident = np.eye(3)
     valid = MovimientoCamara(ident, ident, True)

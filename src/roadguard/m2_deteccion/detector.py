@@ -55,11 +55,12 @@ class DetectorVehiculos:
         self.version_modelo = f"ultralytics {ultralytics.__version__} / {pesos}"
         self._ids_coco = [i for i, c in MAPEO_COCO.items() if c in cfg.clases]
 
-    def actualizar_region_interes(self, region: list[tuple[float, float]]) -> None:
-        self.region_interes = list(region)
-
     def detectar(self, imagen: "object") -> list[Deteccion]:
-        """Devuelve detecciones con clase, caja y confianza (RF2)."""
+        """Devuelve detecciones crudas por clase/confianza; la ROI pertenece a M3.
+
+        No filtrar aquí es intencional: M3 aplica ROI al apoyo longitudinal
+        común usado por asignación y proyección.
+        """
         resultado = self.modelo.predict(
             imagen,
             conf=self.cfg.confianza_min_deteccion,
@@ -75,6 +76,7 @@ class DetectorVehiculos:
             cajas.cls.cpu().numpy(),
             self.cfg,
             self.region_interes,
+            aplicar_roi=False,
         )
 
 
@@ -84,6 +86,8 @@ def detecciones_desde_arrays(
     clases_coco: Sequence[Any],
     cfg: Configuracion,
     region_interes: Optional[list[tuple[float, float]]] = None,
+    *,
+    aplicar_roi: bool = True,
 ) -> list[Deteccion]:
     """Aplica mapeo de clases, clases configuradas, confianza minima y
     region de interes a la salida cruda del modelo (RF2)."""
@@ -96,6 +100,8 @@ def detecciones_desde_arrays(
             continue
         caja = Caja(float(x1), float(y1), float(x2), float(y2))
         detecciones.append(Deteccion(clase=clase, confianza=float(conf), caja=caja))
+    if not aplicar_roi:
+        return detecciones
     return filtrar_region_interes(detecciones, cfg.region_interes if region_interes is None else region_interes)
 
 def filtrar_region_interes(

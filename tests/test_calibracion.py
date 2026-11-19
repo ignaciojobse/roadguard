@@ -13,9 +13,14 @@ Casos minimos a cubrir:
 """
 
 import math
+import importlib.util
+import shutil
+import sys
+from pathlib import Path
 
 import numpy as np
 import pytest
+import yaml
 
 from roadguard.m3_geometria.calibracion import (
     LineaDiscontinua,
@@ -26,6 +31,18 @@ from roadguard.m3_geometria.calibracion import (
 )
 from roadguard.m3_geometria.carriles import asignar_carril
 from roadguard.m3_geometria.homografia import ProyectorCamino
+
+RAIZ = Path(__file__).resolve().parents[1]
+
+
+def _cargar_generador_legacy():
+    spec = importlib.util.spec_from_file_location(
+        "calibrar_ua_detrac_test", RAIZ / "scripts" / "calibrar_ua_detrac.py"
+    )
+    modulo = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = modulo
+    spec.loader.exec_module(modulo)
+    return modulo
 
 # Camara sintetica: focal 800 px, imagen de 960x540, a 8 m de altura,
 # inclinada 20 grados hacia abajo y girada 10 grados respecto del camino.
@@ -122,3 +139,31 @@ def test_coincide_con_la_camara() -> None:
     proyector = ProyectorCamino(r.homografia)
     for p in [(-8.0, -3.0), (5.0, 6.0), (30.0, 1.75), (40.0, 7.0)]:
         assert math.dist(proyector.proyectar(_a_imagen(*p)), p) < 0.1
+
+
+@pytest.mark.parametrize("opciones", [
+    {"compensar_camara": True, "metodo_apoyo": "longitudinal"},
+    None,
+])
+def test_generador_legacy_conserva_opciones_y_geometria_con_perfil_existente(
+    tmp_path, monkeypatch, opciones
+) -> None:
+    import yaml
+
+    generador = _cargar_generador_legacy()
+    configs = tmp_path / "configs"
+    configs.mkdir()
+    shutil.copy(RAIZ / "configs/camara_ejemplo.yaml", configs / "camara_ejemplo.yaml")
+    original = yaml.safe_load((RAIZ / "configs/MVI_39271.yaml").read_text())
+    original["procesamiento_geometria"] = opciones
+    (configs / "MVI_39271.yaml").write_text(yaml.safe_dump(original, sort_keys=False))
+    monkeypatch.setattr(generador, "RAIZ", tmp_path)
+
+    datos, resultado = generador.calibrar("MVI_39271")
+    generador.escribir_yaml("MVI_39271", datos, resultado)
+    regenerado = yaml.safe_load((configs / "MVI_39271.yaml").read_text())
+
+    assert regenerado["procesamiento_geometria"] == opciones
+    assert regenerado["camara"]["resolucion_referencia"] == [960, 540]
+    for campo in ("region_interes", "carriles", "homografia"):
+        assert regenerado[campo] == original[campo]

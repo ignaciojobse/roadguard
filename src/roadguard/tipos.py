@@ -120,6 +120,23 @@ class Configuracion:
     # Paso 4: permanencia estable en el nuevo carril antes de confirmar un
     # cambio completo. Campo agregado; no forma parte de los umbrales RF7-RF11.
     permanencia_cambio_carril: float = 1.0   # s
+    camara: "PerfilCamara" = field(default_factory=lambda: PerfilCamara())
+    procesamiento_geometria: "ProcesamientoGeometria" = field(
+        default_factory=lambda: ProcesamientoGeometria()
+    )
+
+
+@dataclass(frozen=True)
+class PerfilCamara:
+    nombre: str = ""
+    descripcion: str = ""
+    resolucion_referencia: Optional[tuple[int, int]] = None
+
+
+@dataclass(frozen=True)
+class ProcesamientoGeometria:
+    compensar_camara: bool = False
+    metodo_apoyo: str = "centro_inferior"
 
 
 # ---------------------------------------------------------------------------

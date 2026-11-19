@@ -42,6 +42,54 @@ def test_carga_configuracion_de_ejemplo() -> None:
     assert len(cfg.carriles) == 2
     assert cfg.clases == ["automovil", "bus", "camion", "motocicleta"]
     assert cfg.umbrales.cercania_thw_max == 1.5
+    assert cfg.camara.nombre == "ejemplo"
+    assert cfg.camara.resolucion_referencia is None
+    assert cfg.procesamiento_geometria.metodo_apoyo == "centro_inferior"
+
+
+def test_perfil_cam_configurado_y_validacion_estricta(tmp_path: Path) -> None:
+    datos = _base()
+    datos["camara"] = {"nombre": "demo", "descripcion": "fija", "resolucion_referencia": [960, 540]}
+    datos["procesamiento_geometria"] = {"compensar_camara": True, "metodo_apoyo": "longitudinal"}
+    datos["homografia"] = {
+        "puntos_imagen": [[0, 0], [100, 0], [100, 100], [0, 100]],
+        "puntos_camino": [[0, 0], [10, 0], [10, 10], [0, 10]],
+    }
+    cfg = cargar_configuracion(_escribir(tmp_path, datos))
+    assert cfg.camara.resolucion_referencia == (960, 540)
+    assert cfg.procesamiento_geometria.compensar_camara
+    datos["procesamiento_geometria"]["clave_desconocida"] = True
+    with pytest.raises(ErrorConfiguracion):
+        cargar_configuracion(_escribir(tmp_path, datos))
+    for metodo in ([], {}):
+        datos["procesamiento_geometria"] = {"metodo_apoyo": metodo}
+        with pytest.raises(ErrorConfiguracion):
+            cargar_configuracion(_escribir(tmp_path, datos))
+
+
+def test_autointerseccion_rechazada_y_coordenadas_negativas_admitidas(tmp_path: Path) -> None:
+    from roadguard.m1_ingesta.config import validar_consistencia
+    datos = _base()
+    datos["region_interes"] = [[-10, 0], [10, 0], [10, 10], [-10, 10]]
+    cfg = cargar_configuracion(_escribir(tmp_path, datos))
+    assert validar_consistencia(cfg)
+    datos["carriles"][0]["poligono"] = [[0, 0], [10, 10], [0, 10], [10, 0]]
+    with pytest.raises(ErrorConfiguracion, match="autointersecta"):
+        validar_consistencia(cargar_configuracion(_escribir(tmp_path, datos)))
+
+
+def test_politica_reemplaza_completo_y_rechaza_claves_extra(tmp_path: Path) -> None:
+    from roadguard.m1_ingesta.config import cargar_politica
+    cfg = cargar_configuracion(str(EJEMPLO))
+    ruta = tmp_path / "politica.yaml"
+    ruta.write_text("umbrales:\n  cercania_thw_max: 2.0\n", encoding="utf-8")
+    efectiva, sha = cargar_politica(str(ruta), cfg)
+    assert efectiva.umbrales.cercania_thw_max == 2.0
+    assert efectiva.umbrales.aporte_cercania == 40
+    assert efectiva.camara == cfg.camara and len(sha) == 64
+    ruta.write_text("umbrales: {}\notro: 1\n", encoding="utf-8")
+    with pytest.raises(ErrorConfiguracion):
+        cargar_politica(str(ruta), cfg)
 
 
 def test_homografia_vacia_carga_con_advertencia(tmp_path: Path) -> None:

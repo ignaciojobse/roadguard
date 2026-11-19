@@ -16,8 +16,8 @@ import argparse
 import sys
 from typing import Callable, Optional, Sequence
 
-from roadguard.m1_ingesta.config import ErrorConfiguracion, cargar_configuracion
-from roadguard.m1_ingesta.video import ErrorVideo
+from roadguard.m1_ingesta.config import ErrorConfiguracion, cargar_configuracion, cargar_politica, validar_perfil_video
+from roadguard.m1_ingesta.video import ErrorVideo, leer_metadatos
 from roadguard.m5_salidas.escritor import ErrorSalida
 from roadguard.pipeline import Detector, Pipeline, ResultadoPipeline
 from roadguard.m3_geometria.homografia import ProyectorCamino
@@ -35,6 +35,7 @@ def construir_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("procesar", help="Procesa un MP4 y escribe video anotado, CSV y JSON")
     p.add_argument("--video", required=True, help="Ruta al MP4 de entrada (RF1)")
     p.add_argument("--config", required=True, help="Ruta al YAML de la camara (RF1)")
+    p.add_argument("--politica", help="YAML explícito de umbrales; reemplaza la política completa")
     p.add_argument("--salida", required=True, help="Directorio de salida")
     p.add_argument("--pesos", default="yolov8n.pt", help="Pesos de YOLOv8 (por defecto yolov8n.pt)")
     p.add_argument("--max-cuadros", type=int, default=None, help="Procesar solo los primeros N cuadros")
@@ -47,11 +48,16 @@ def construir_parser() -> argparse.ArgumentParser:
         "--dispositivo", choices=("cpu", "cuda", "mps"), default=None,
         help="Dispositivo de inferencia; por defecto lo elige Ultralytics",
     )
-    p.add_argument("--compensar-camara", action="store_true", help="Compensa movimiento leve de camara")
+    p.add_argument("--compensar-camara", dest="compensar_camara", action="store_true", default=None, help="Compensa movimiento leve de camara")
+    p.add_argument("--sin-compensar-camara", dest="compensar_camara", action="store_false", help="Desactiva la compensacion de camara")
     p.add_argument(
         "--punto-apoyo", choices=("centro_inferior", "longitudinal"),
-        default="centro_inferior", help="Punto de apoyo geometrico del vehiculo",
+        default=None, help="Punto de apoyo geometrico del vehiculo",
     )
+    v = sub.add_parser("validar", help="Valida perfil y video sin detectar ni escribir archivos")
+    v.add_argument("--video", required=True)
+    v.add_argument("--config", required=True)
+    v.add_argument("--politica", help="YAML explícito de umbrales; reemplaza la política completa")
     return parser
 
 
@@ -63,11 +69,17 @@ def _detector_yolo(cfg: Configuracion, args: argparse.Namespace) -> Detector:
 
 def procesar(args: argparse.Namespace, fabrica_detector: FabricaDetector) -> ResultadoPipeline:
     cfg = cargar_configuracion(args.config)
-    if args.punto_apoyo == "longitudinal" and not ProyectorCamino(cfg.homografia).disponible:
+    if args.politica:
+        cfg, _ = cargar_politica(args.politica, cfg)
+    metadatos = leer_metadatos(args.video)
+    validar_perfil_video(cfg, metadatos)
+    compensar = cfg.procesamiento_geometria.compensar_camara if args.compensar_camara is None else args.compensar_camara
+    apoyo = cfg.procesamiento_geometria.metodo_apoyo if args.punto_apoyo is None else args.punto_apoyo
+    if apoyo == "longitudinal" and not ProyectorCamino(cfg.homografia).disponible:
         raise ErrorConfiguracion("El apoyo longitudinal requiere una homografia/proyector disponible")
     detector = fabrica_detector(cfg, args)
-    pipeline = Pipeline(cfg, detector, ruta_config=args.config,
-                        compensar_camara=args.compensar_camara, metodo_apoyo=args.punto_apoyo)
+    pipeline = Pipeline(cfg, detector, ruta_config=args.config, ruta_politica=args.politica,
+                        compensar_camara=compensar, metodo_apoyo=apoyo)
     return pipeline.ejecutar(
         args.video,
         args.salida,
@@ -75,6 +87,25 @@ def procesar(args: argparse.Namespace, fabrica_detector: FabricaDetector) -> Res
         escribir_video=not args.sin_video,
         escribir_tracks=args.tracks,
     )
+
+
+def validar(args: argparse.Namespace) -> list[str]:
+    cfg = cargar_configuracion(args.config)
+    if args.politica:
+        cfg, _ = cargar_politica(args.politica, cfg)
+    metadatos = leer_metadatos(args.video)
+    advertencias = validar_perfil_video(cfg, metadatos)
+    proyector = ProyectorCamino(cfg.homografia)
+    if cfg.procesamiento_geometria.metodo_apoyo == "longitudinal" and not proyector.disponible:
+        raise ErrorConfiguracion("El apoyo longitudinal requiere una homografia/proyector disponible")
+    rf9 = proyector.disponible and len(cfg.carriles) >= 2
+    print(f"Perfil valido: {metadatos.ancho}x{metadatos.alto} a {metadatos.fps:g} FPS")
+    print(f"Capacidades: RF7 {'disponible' if proyector.disponible else 'no evaluable (sin homografia)'}; "
+          f"RF8 {'zigzag evaluable' if len(cfg.carriles) >= 2 else 'no evaluable (<2 carriles)'}; "
+          f"RF9 {'disponible' if rf9 else 'no evaluable (requiere homografia y >=2 carriles)'}")
+    for advertencia in advertencias:
+        print(f"Advertencia: {advertencia}")
+    return advertencias
 
 
 def imprimir_resumen(resultado: ResultadoPipeline, salida=None) -> None:
@@ -105,10 +136,13 @@ def main(
 ) -> int:
     """Punto de entrada. `fabrica_detector` permite inyectar un detector falso."""
     args = construir_parser().parse_args(argv)
-    if args.max_cuadros is not None and args.max_cuadros <= 0:
+    if getattr(args, "max_cuadros", None) is not None and args.max_cuadros <= 0:
         print("--max-cuadros debe ser positivo", file=sys.stderr)
         return 2
     try:
+        if args.comando == "validar":
+            validar(args)
+            return 0
         resultado = procesar(args, fabrica_detector)
     except (ErrorConfiguracion, ErrorVideo, ErrorSalida) as e:
         print(f"Error: {e}", file=sys.stderr)

@@ -18,8 +18,13 @@
 
 camara:
   nombre: MVI_39271
+  resolucion_referencia: [960, 540]
   descripcion: >-
     UA-DETRAC prueba, dia soleado, camara fija. Calzada cercana (entre el paradero de buses y el bandejon); el trafico avanza de derecha a izquierda, acercandose a la camara.
+
+procesamiento_geometria:
+  compensar_camara: true
+  metodo_apoyo: longitudinal
 
 # Region de interes: poligono en coordenadas de imagen (px), x de -25 a
 # 25 m y todo el ancho de la calzada.

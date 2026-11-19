@@ -144,6 +144,13 @@ Cambiar tipo -> T4 GPU` y ejecutar todas las celdas: clona el repo, instala,
 baja MVI_39271 y corre el perfil con y sin MP4 anotado. Las cifras medidas
 estan en la bitacora 2, anexo de metricas.
 
+## Calibrar otra camara
+
+Para preparar y validar una calibracion generica sin editar Python, sigue
+[la guia de camaras](docs/camaras.md). La definicion de ejemplo reproducible
+de MVI_39271 esta en `configs/calibraciones/MVI_39271_lineas.yaml`; el perfil
+resultante se guarda por separado, sin sobrescribir `configs/MVI_39271.yaml`.
+
 ## Uso como biblioteca
 
 ```python
