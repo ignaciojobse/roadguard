@@ -86,7 +86,11 @@ clases:
   - motocicleta
 
 confianza_min_deteccion: 0.25
-confianza_min_carril: 0.60
+# Confianza de carril (1 en el centro, 0 en la linea) que cuenta para
+# confirmar o cancelar un cambio. 0,3 es el mejor F1 de reglas sobre NGSIM
+# degradado y sobre MVI_39271 (evaluacion del 18-nov; con 0,6 M3 confirmaba
+# la mitad de los cambios reales).
+confianza_min_carril: 0.30
 
 # Paso 4: segundos de permanencia estable en el nuevo carril antes de
 # confirmar un cambio completo. Las oscilaciones sobre la linea no cuentan.
@@ -98,6 +102,9 @@ umbrales:
   cercania_velocidad_min: 5.0      # m/s
   cercania_thw_max: 1.5            # s
   cercania_persistencia: 2.0       # s
+  # Interrupcion (oclusion breve) que no corta el tramo: con 0 un mismo
+  # episodio salia partido en dos. 1,5 s cubre el hueco medio medido (0,9 s).
+  cercania_tolerancia_interrupcion: 1.5   # s
 
   # RF8 - Zigzag
   zigzag_cambios_min: 2

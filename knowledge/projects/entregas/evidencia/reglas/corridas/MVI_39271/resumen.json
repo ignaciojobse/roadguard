@@ -1,0 +1,719 @@
+{
+  "ejecucion": {
+    "video": "datos/videos/MVI_39271.mp4",
+    "configuracion": "configs/MVI_39271.yaml",
+    "version_modelo": "ultralytics 8.4.214 / datos/modelos/yolov8n.pt",
+    "fps_video": 25.0,
+    "fps_procesamiento": 64.52666096329581,
+    "n_cuadros_procesados": 1570,
+    "calibrado": true,
+    "advertencias": [
+      "RF7 no evaluable para uno o mas vehiculos: calibracion, observaciones o metricas no disponibles/invalidas"
+    ],
+    "configuracion_sha256": "d76e1f3da560628d0d8a1700f3365fc8599dca051a17660293e21506205ca3df",
+    "parametros": {
+      "region_interes": [
+        [
+          924.6,
+          285.2
+        ],
+        [
+          31.3,
+          545.0
+        ],
+        [
+          -82.6,
+          374.1
+        ],
+        [
+          724.7,
+          249.1
+        ]
+      ],
+      "carriles": [
+        {
+          "indice": 0,
+          "poligono": [
+            [
+              924.6,
+              285.2
+            ],
+            [
+              31.3,
+              545.0
+            ],
+            [
+              -0.6,
+              497.2
+            ],
+            [
+              878.6,
+              276.9
+            ]
+          ]
+        },
+        {
+          "indice": 1,
+          "poligono": [
+            [
+              878.6,
+              276.9
+            ],
+            [
+              -0.6,
+              497.2
+            ],
+            [
+              -28.1,
+              455.9
+            ],
+            [
+              833.4,
+              268.7
+            ]
+          ]
+        },
+        {
+          "indice": 2,
+          "poligono": [
+            [
+              833.4,
+              268.7
+            ],
+            [
+              -28.1,
+              455.9
+            ],
+            [
+              -50.8,
+              421.8
+            ],
+            [
+              791.6,
+              261.2
+            ]
+          ]
+        },
+        {
+          "indice": 3,
+          "poligono": [
+            [
+              791.6,
+              261.2
+            ],
+            [
+              -50.8,
+              421.8
+            ],
+            [
+              -82.6,
+              374.1
+            ],
+            [
+              724.7,
+              249.1
+            ]
+          ]
+        }
+      ],
+      "homografia": {
+        "puntos_imagen": [
+          [
+            637.0,
+            338.0
+          ],
+          [
+            543.0,
+            361.0
+          ],
+          [
+            349.0,
+            410.0
+          ],
+          [
+            161.0,
+            455.0
+          ],
+          [
+            560.0,
+            328.0
+          ],
+          [
+            463.0,
+            348.0
+          ],
+          [
+            255.0,
+            396.0
+          ],
+          [
+            69.0,
+            435.0
+          ]
+        ],
+        "puntos_camino": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            6.0,
+            0.0
+          ],
+          [
+            15.0,
+            0.0
+          ],
+          [
+            21.0,
+            0.0
+          ],
+          [
+            1.635,
+            3.5
+          ],
+          [
+            7.635,
+            3.5
+          ],
+          [
+            16.635,
+            3.5
+          ],
+          [
+            22.635,
+            3.5
+          ]
+        ]
+      },
+      "clases": [
+        "automovil",
+        "bus",
+        "camion",
+        "motocicleta"
+      ],
+      "umbrales": {
+        "cercania_velocidad_min": 5.0,
+        "cercania_thw_max": 1.5,
+        "cercania_persistencia": 2.0,
+        "cercania_tolerancia_interrupcion": 1.5,
+        "zigzag_cambios_min": 2,
+        "zigzag_ventana": 10.0,
+        "corte_ventana_post_cambio": 2.0,
+        "corte_thw_max": 1.5,
+        "corte_ttc_max": 3.0,
+        "aporte_cercania": 40,
+        "aporte_zigzag": 35,
+        "aporte_corte": 50,
+        "puntaje_maximo": 100,
+        "vigencia_aporte": 5.0,
+        "banda_verde_max": 29,
+        "banda_amarillo_max": 59
+      },
+      "confianza_min_deteccion": 0.25,
+      "confianza_min_carril": 0.3,
+      "permanencia_cambio_carril": 1.0
+    },
+    "n_eventos": {
+      "cercania_peligrosa": 10,
+      "zigzag": 1,
+      "corte_de_carril": 3
+    },
+    "fps_por_etapa": {
+      "deteccion": 84.28582699650322,
+      "seguimiento": 4109.555301542,
+      "geometria": 8266.493946519622,
+      "reglas": 25722.418175313163,
+      "salidas": 344.8048631692403
+    },
+    "completada": true
+  },
+  "vehiculos": [
+    {
+      "id_vehiculo": 1,
+      "clase": "automovil",
+      "t_primera_aparicion": 0.2,
+      "t_ultima_aparicion": 3.16,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 2,
+      "clase": "automovil",
+      "t_primera_aparicion": 4.0,
+      "t_ultima_aparicion": 7.0,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 3,
+      "clase": "automovil",
+      "t_primera_aparicion": 6.84,
+      "t_ultima_aparicion": 10.24,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 4,
+      "clase": "automovil",
+      "t_primera_aparicion": 7.76,
+      "t_ultima_aparicion": 10.72,
+      "n_eventos": {
+        "cercania_peligrosa": 1
+      },
+      "puntaje_maximo": 40,
+      "nivel_maximo": "amarillo"
+    },
+    {
+      "id_vehiculo": 5,
+      "clase": "bus",
+      "t_primera_aparicion": 8.2,
+      "t_ultima_aparicion": 37.2,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 6,
+      "clase": "automovil",
+      "t_primera_aparicion": 10.08,
+      "t_ultima_aparicion": 13.72,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 7,
+      "clase": "automovil",
+      "t_primera_aparicion": 12.64,
+      "t_ultima_aparicion": 16.52,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 8,
+      "clase": "automovil",
+      "t_primera_aparicion": 12.64,
+      "t_ultima_aparicion": 17.24,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 9,
+      "clase": "automovil",
+      "t_primera_aparicion": 16.16,
+      "t_ultima_aparicion": 19.72,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 10,
+      "clase": "automovil",
+      "t_primera_aparicion": 16.6,
+      "t_ultima_aparicion": 23.8,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 11,
+      "clase": "automovil",
+      "t_primera_aparicion": 18.04,
+      "t_ultima_aparicion": 21.84,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 12,
+      "clase": "automovil",
+      "t_primera_aparicion": 19.12,
+      "t_ultima_aparicion": 22.6,
+      "n_eventos": {
+        "cercania_peligrosa": 1
+      },
+      "puntaje_maximo": 40,
+      "nivel_maximo": "amarillo"
+    },
+    {
+      "id_vehiculo": 13,
+      "clase": "automovil",
+      "t_primera_aparicion": 19.24,
+      "t_ultima_aparicion": 24.88,
+      "n_eventos": {
+        "cercania_peligrosa": 1
+      },
+      "puntaje_maximo": 40,
+      "nivel_maximo": "amarillo"
+    },
+    {
+      "id_vehiculo": 14,
+      "clase": "automovil",
+      "t_primera_aparicion": 20.48,
+      "t_ultima_aparicion": 24.2,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 15,
+      "clase": "automovil",
+      "t_primera_aparicion": 22.16,
+      "t_ultima_aparicion": 26.56,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 16,
+      "clase": "automovil",
+      "t_primera_aparicion": 23.2,
+      "t_ultima_aparicion": 26.88,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 17,
+      "clase": "automovil",
+      "t_primera_aparicion": 24.04,
+      "t_ultima_aparicion": 29.0,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 18,
+      "clase": "automovil",
+      "t_primera_aparicion": 25.56,
+      "t_ultima_aparicion": 30.44,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 19,
+      "clase": "automovil",
+      "t_primera_aparicion": 27.12,
+      "t_ultima_aparicion": 32.56,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 20,
+      "clase": "automovil",
+      "t_primera_aparicion": 28.56,
+      "t_ultima_aparicion": 34.32,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 21,
+      "clase": "automovil",
+      "t_primera_aparicion": 30.16,
+      "t_ultima_aparicion": 35.24,
+      "n_eventos": {
+        "cercania_peligrosa": 1
+      },
+      "puntaje_maximo": 40,
+      "nivel_maximo": "amarillo"
+    },
+    {
+      "id_vehiculo": 22,
+      "clase": "automovil",
+      "t_primera_aparicion": 32.16,
+      "t_ultima_aparicion": 36.32,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 23,
+      "clase": "automovil",
+      "t_primera_aparicion": 33.08,
+      "t_ultima_aparicion": 38.12,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 24,
+      "clase": "automovil",
+      "t_primera_aparicion": 33.88,
+      "t_ultima_aparicion": 39.2,
+      "n_eventos": {
+        "cercania_peligrosa": 1
+      },
+      "puntaje_maximo": 40,
+      "nivel_maximo": "amarillo"
+    },
+    {
+      "id_vehiculo": 25,
+      "clase": "automovil",
+      "t_primera_aparicion": 34.12,
+      "t_ultima_aparicion": 38.52,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 26,
+      "clase": "automovil",
+      "t_primera_aparicion": 35.6,
+      "t_ultima_aparicion": 40.36,
+      "n_eventos": {
+        "corte_de_carril": 1
+      },
+      "puntaje_maximo": 50,
+      "nivel_maximo": "amarillo"
+    },
+    {
+      "id_vehiculo": 27,
+      "clase": "automovil",
+      "t_primera_aparicion": 36.4,
+      "t_ultima_aparicion": 40.6,
+      "n_eventos": {
+        "cercania_peligrosa": 1
+      },
+      "puntaje_maximo": 40,
+      "nivel_maximo": "amarillo"
+    },
+    {
+      "id_vehiculo": 28,
+      "clase": "automovil",
+      "t_primera_aparicion": 36.4,
+      "t_ultima_aparicion": 41.92,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 29,
+      "clase": "bus",
+      "t_primera_aparicion": 36.92,
+      "t_ultima_aparicion": 49.48,
+      "n_eventos": {
+        "corte_de_carril": 1
+      },
+      "puntaje_maximo": 50,
+      "nivel_maximo": "amarillo"
+    },
+    {
+      "id_vehiculo": 30,
+      "clase": "automovil",
+      "t_primera_aparicion": 37.08,
+      "t_ultima_aparicion": 41.48,
+      "n_eventos": {
+        "cercania_peligrosa": 1
+      },
+      "puntaje_maximo": 40,
+      "nivel_maximo": "amarillo"
+    },
+    {
+      "id_vehiculo": 31,
+      "clase": "automovil",
+      "t_primera_aparicion": 38.04,
+      "t_ultima_aparicion": 38.24,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 32,
+      "clase": "automovil",
+      "t_primera_aparicion": 39.4,
+      "t_ultima_aparicion": 43.52,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 33,
+      "clase": "automovil",
+      "t_primera_aparicion": 40.56,
+      "t_ultima_aparicion": 45.48,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 34,
+      "clase": "automovil",
+      "t_primera_aparicion": 41.08,
+      "t_ultima_aparicion": 46.44,
+      "n_eventos": {
+        "cercania_peligrosa": 1
+      },
+      "puntaje_maximo": 40,
+      "nivel_maximo": "amarillo"
+    },
+    {
+      "id_vehiculo": 35,
+      "clase": "automovil",
+      "t_primera_aparicion": 41.2,
+      "t_ultima_aparicion": 42.48,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 36,
+      "clase": "automovil",
+      "t_primera_aparicion": 41.32,
+      "t_ultima_aparicion": 47.2,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 37,
+      "clase": "automovil",
+      "t_primera_aparicion": 42.96,
+      "t_ultima_aparicion": 48.64,
+      "n_eventos": {
+        "cercania_peligrosa": 1,
+        "corte_de_carril": 1
+      },
+      "puntaje_maximo": 90,
+      "nivel_maximo": "rojo"
+    },
+    {
+      "id_vehiculo": 38,
+      "clase": "automovil",
+      "t_primera_aparicion": 43.48,
+      "t_ultima_aparicion": 45.76,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 39,
+      "clase": "automovil",
+      "t_primera_aparicion": 44.52,
+      "t_ultima_aparicion": 49.96,
+      "n_eventos": {
+        "cercania_peligrosa": 1
+      },
+      "puntaje_maximo": 40,
+      "nivel_maximo": "amarillo"
+    },
+    {
+      "id_vehiculo": 40,
+      "clase": "automovil",
+      "t_primera_aparicion": 46.6,
+      "t_ultima_aparicion": 47.56,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 41,
+      "clase": "automovil",
+      "t_primera_aparicion": 48.28,
+      "t_ultima_aparicion": 52.44,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 42,
+      "clase": "automovil",
+      "t_primera_aparicion": 48.28,
+      "t_ultima_aparicion": 54.68,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 43,
+      "clase": "automovil",
+      "t_primera_aparicion": 48.92,
+      "t_ultima_aparicion": 50.84,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 44,
+      "clase": "automovil",
+      "t_primera_aparicion": 49.52,
+      "t_ultima_aparicion": 56.28,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 45,
+      "clase": "bus",
+      "t_primera_aparicion": 49.84,
+      "t_ultima_aparicion": 58.84,
+      "n_eventos": {
+        "zigzag": 1
+      },
+      "puntaje_maximo": 35,
+      "nivel_maximo": "amarillo"
+    },
+    {
+      "id_vehiculo": 46,
+      "clase": "automovil",
+      "t_primera_aparicion": 51.72,
+      "t_ultima_aparicion": 53.0,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 47,
+      "clase": "automovil",
+      "t_primera_aparicion": 56.0,
+      "t_ultima_aparicion": 62.72,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 48,
+      "clase": "automovil",
+      "t_primera_aparicion": 57.24,
+      "t_ultima_aparicion": 62.76,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 49,
+      "clase": "automovil",
+      "t_primera_aparicion": 58.92,
+      "t_ultima_aparicion": 62.76,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 50,
+      "clase": "automovil",
+      "t_primera_aparicion": 61.32,
+      "t_ultima_aparicion": 62.76,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    },
+    {
+      "id_vehiculo": 51,
+      "clase": "automovil",
+      "t_primera_aparicion": 62.76,
+      "t_ultima_aparicion": 62.76,
+      "n_eventos": {},
+      "puntaje_maximo": 0,
+      "nivel_maximo": "verde"
+    }
+  ]
+}

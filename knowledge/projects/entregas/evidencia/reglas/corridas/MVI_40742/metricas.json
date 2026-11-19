@@ -1,0 +1,110 @@
+{
+  "secuencia": "MVI_40742",
+  "corrida": "salidas/MVI_40742",
+  "xml": "datos/ua-detrac/MVI_40742/MVI_40742.xml",
+  "configuracion": "configs/MVI_40742.yaml",
+  "version_modelo": "ultralytics 8.4.214 / datos/modelos/yolov8n.pt",
+  "n_cuadros": 1655,
+  "fps_video": 25.0,
+  "fps_procesamiento": 66.21,
+  "fps_por_etapa": {
+    "deteccion": 86.1,
+    "seguimiento": 3641.7,
+    "geometria": 17318.2,
+    "reglas": 24987.3,
+    "salidas": 363.5
+  },
+  "eventos_por_regla": {
+    "cercania_peligrosa": 0,
+    "zigzag": 1,
+    "corte_de_carril": 0
+  },
+  "iou_min": 0.5,
+  "mapeo_clases": {
+    "car": "automovil",
+    "van": "automovil",
+    "bus": "bus",
+    "others": "camion"
+  },
+  "regiones_ignoradas": {
+    "n": 5,
+    "cajas_referencia_descartadas": 87,
+    "cajas_detectadas_descartadas": 0
+  },
+  "cuadro_completo": {
+    "map50_sin_clase": {
+      "ap": 0.3482,
+      "n_referencia": 25053,
+      "n_detecciones": 8781,
+      "precision_final": 0.9941,
+      "recobrado_final": 0.3484
+    },
+    "ap50_por_clase": {
+      "automovil": {
+        "ap": 0.2649,
+        "n_referencia": 15096,
+        "n_detecciones": 4002,
+        "precision_final": 0.9993,
+        "recobrado_final": 0.2649
+      },
+      "bus": {
+        "ap": 0.4749,
+        "n_referencia": 9957,
+        "n_detecciones": 4779,
+        "precision_final": 0.9897,
+        "recobrado_final": 0.475
+      }
+    },
+    "seguimiento": {
+      "idf1": 0.4219,
+      "idtp": 7137,
+      "idfp": 1644,
+      "idfn": 17916,
+      "mota": 0.3462,
+      "falsos_negativos": 16324,
+      "falsos_positivos": 52,
+      "cambios_id": 4,
+      "n_trayectorias_referencia": 33,
+      "n_trayectorias_detectadas": 20
+    }
+  },
+  "region_interes": {
+    "descripcion": "referencia restringida a cajas cuyo punto de calzada cae en region_interes del YAML",
+    "n_referencia_fuera_de_region": 15580,
+    "map50_sin_clase": {
+      "ap": 0.9207,
+      "n_referencia": 9473,
+      "n_detecciones": 8781,
+      "precision_final": 0.994,
+      "recobrado_final": 0.9214
+    },
+    "ap50_por_clase": {
+      "automovil": {
+        "ap": 0.9099,
+        "n_referencia": 4395,
+        "n_detecciones": 4002,
+        "precision_final": 0.9993,
+        "recobrado_final": 0.9099
+      },
+      "bus": {
+        "ap": 0.9308,
+        "n_referencia": 5078,
+        "n_detecciones": 4779,
+        "precision_final": 0.9895,
+        "recobrado_final": 0.9313
+      }
+    },
+    "seguimiento": {
+      "idf1": 0.7819,
+      "idtp": 7136,
+      "idfp": 1645,
+      "idfn": 2337,
+      "mota": 0.9153,
+      "falsos_negativos": 745,
+      "falsos_positivos": 53,
+      "cambios_id": 4,
+      "n_trayectorias_referencia": 16,
+      "n_trayectorias_detectadas": 20
+    }
+  }
+}

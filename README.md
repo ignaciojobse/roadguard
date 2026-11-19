@@ -125,6 +125,14 @@ cercania (RF7), zigzag (RF8), corte de carril (RF9) y el puntaje con
 caducidad y bandas (RF10 y RF11). `pipeline.MotorCercania` queda como motor
 minimo de respaldo (solo RF7 con puntaje) para pruebas.
 
+## Demo interactiva
+
+```bash
+bash scripts/demo_web.sh
+```
+
+Abre en el navegador (`http://127.0.0.1:8000/demo_web/`, sin red) una corrida real reproducida sobre los cuadros originales, con una capa por etapa: cuadro, detección, seguimiento, metros y carriles (con vista de pájaro), reglas y riesgo, y resultado. Tiene una línea de tiempo de eventos, ficha por vehículo y cinco cámaras: las tres de la evaluación y dos más del 18-nov, una autopista (MVI_40243, calibrada desde sus trazos y verificada con una tercera línea y con las velocidades de la anotación) y un cruce con semáforo (MVI_40712, la misma cámara de MVI_40714 con el encuadre movido, calibración transferida por registro de imágenes). Los datos los arma `scripts/exportar_demo.py` desde una corrida con `--tracks --estados`; `estados.csv` trae, por vehículo y cuadro, posición en metros, velocidad, THW, TTC y puntaje.
+
 ## Rendimiento
 
 El criterio de la propuesta es **>= 15 FPS a 720p en Colab T4**. El perfil
@@ -199,6 +207,42 @@ Demo determinista sin video, datos externos ni GPU, desde la raiz:
 python scripts/demo_cercania.py
 python -m pytest tests/test_reglas_cercania.py tests/test_demo_cercania.py -q
 ```
+
+## Evaluación de reglas (F1 sobre NGSIM)
+
+UA-DETRAC no trae eventos de referencia, así que las reglas se miden sobre
+60 s de trayectorias reales de NGSIM US-101: los eventos de referencia salen
+de la trayectoria limpia y el sistema (M3 + M4) recibe esa misma trayectoria
+con los defectos que se midieron en video (error de posición, oclusiones y
+cambios de ID). Ver `knowledge/projects/datos-y-evaluacion/datos-y-evaluacion.md`.
+
+```bash
+python -m roadguard.m6_evaluacion.ngsim --desde-ms 1118847300000 --duracion-s 60 \
+    --salida datos/ngsim/us101_muestra.csv
+python scripts/medir_ruido_m3.py MVI_40714
+python scripts/medir_ruido_m3.py MVI_40742
+python scripts/evaluar_reglas.py --semillas 5
+```
+
+El F1 también se mide sobre el video real: las cajas anotadas a mano de
+UA-DETRAC, llevadas a metros con la misma homografía, dan los eventos de
+referencia de la secuencia (necesita una corrida con `--tracks`):
+
+```bash
+python scripts/evaluar_reglas_video.py MVI_39271 MVI_40714
+```
+
+Resultado al 18-nov, con la configuración de los YAML: M4 sobre la
+trayectoria limpia da F1 = 1,00 en las tres reglas; el sistema completo con
+los defectos medidos en MVI_39271 da **0,80** sobre NGSIM (cercanía 0,82,
+zigzag 0,61, corte 0,62; meta 0,75) y **0,65** sobre el video real de
+MVI_39271. Dos parámetros salieron de esa evaluación:
+
+- `umbrales.cercania_tolerancia_interrupcion: 1.5`: una oclusión o un cuadro
+  fuera de umbral de hasta 1,5 s no corta el tramo de cercanía (con 0, que es
+  la definición original, un mismo episodio salía partido en dos).
+- `confianza_min_carril: 0.30` (antes 0,60): con 0,6 M3 confirmaba la mitad
+  de los cambios de carril reales.
 
 ## Pruebas
 

@@ -1,0 +1,2 @@
+id_vehiculo,regla,t_inicio,t_fin,id_relacionado,aporte_puntaje,variable_carril_final,variable_carril_inicial,variable_duracion_cruces,variable_n_cambios,variable_t_confirmacion,variable_t_primer_cruce,variable_t_ultimo_cruce,umbral_zigzag_cambios_min,umbral_zigzag_ventana
+7,zigzag,24.4,29.28,,35,1.0,1.0,3.6400000000000006,2.0,29.28,24.4,28.04,2.0,10.0

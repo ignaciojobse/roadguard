@@ -1,7 +1,7 @@
 """Linea de comandos de RoadGuard.
 
     python -m roadguard procesar --video RUTA.mp4 --config RUTA.yaml --salida DIR
-        [--pesos yolov8n.pt] [--max-cuadros N] [--sin-video] [--tracks]
+        [--pesos yolov8n.pt] [--max-cuadros N] [--sin-video] [--tracks] [--estados]
         [--dispositivo cpu|cuda|mps]
 
 Genera en DIR: anotado.mp4, eventos.csv y resumen.json (y tracks.csv con
@@ -43,6 +43,10 @@ def construir_parser() -> argparse.ArgumentParser:
         help="Escribir ademas tracks.csv (cuadro, id, clase, caja, carril y confianza) para evaluacion",
     )
     p.add_argument(
+        "--estados", action="store_true",
+        help="Escribir ademas estados.csv (metros, velocidad, THW, TTC y puntaje por vehiculo y cuadro)",
+    )
+    p.add_argument(
         "--dispositivo", choices=("cpu", "cuda", "mps"), default=None,
         help="Dispositivo de inferencia; por defecto lo elige Ultralytics",
     )
@@ -65,6 +69,7 @@ def procesar(args: argparse.Namespace, fabrica_detector: FabricaDetector) -> Res
         max_cuadros=args.max_cuadros,
         escribir_video=not args.sin_video,
         escribir_tracks=args.tracks,
+        escribir_estados=args.estados,
     )
 
 
@@ -84,7 +89,8 @@ def imprimir_resumen(resultado: ResultadoPipeline, salida=None) -> None:
         print(f"Advertencia: {adv}", file=salida)
     print("Salidas:", file=salida)
     for ruta in (
-        resultado.ruta_video, resultado.ruta_eventos, resultado.ruta_resumen, resultado.ruta_tracks
+        resultado.ruta_video, resultado.ruta_eventos, resultado.ruta_resumen, resultado.ruta_tracks,
+        resultado.ruta_estados,
     ):
         if ruta:
             print(f"  {ruta}", file=salida)

@@ -146,8 +146,8 @@ El sitio oficial (`detrac-db.rit.albany.edu`) redirige a la página del laborato
 - [x] Los eventos de referencia respetan persistencia, cambio completo y ventana de corte (tests).
 - [x] El F1 es uno a uno y queda en None sin denominador (tests).
 - [x] Las 3 secuencias UA-DETRAC están elegidas y documentadas.
-- [ ] mAP@0.5, IDF1, cambios de ID y FPS están medidos. _(1 de 3 al 15-nov: MVI_39271 con `scripts/medir_mvi.py`; ver el anexo de la bitácora 2.)_
-- [ ] El F1 de reglas está medido con M4 sobre trayectorias degradadas.
+- [ ] mAP@0.5, IDF1, cambios de ID y FPS están medidos. _(mAP, IDF1 y cambios de ID en las 3 secuencias el 15-nov; FPS a 720p en Apple M4. Falta la T4.)_
+- [x] El F1 de reglas está medido con M4 sobre trayectorias degradadas. _(18-nov: `scripts/evaluar_reglas.py`; ver el anexo de la bitácora 2.)_
 
 ## 10. Riesgos y decisiones abiertas
 

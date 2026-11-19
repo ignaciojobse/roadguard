@@ -1,0 +1,11 @@
+Cuadros procesados: 1180
+FPS de procesamiento: 63.32 (video a 25.00)
+Eventos por regla:
+  cercania_peligrosa: 0
+  zigzag: 0
+  corte_de_carril: 0
+Salidas:
+  salidas/MVI_40714/anotado.mp4
+  salidas/MVI_40714/eventos.csv
+  salidas/MVI_40714/resumen.json
+  salidas/MVI_40714/tracks.csv

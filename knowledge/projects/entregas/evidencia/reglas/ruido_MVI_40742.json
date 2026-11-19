@@ -1,0 +1,17 @@
+{
+  "secuencia": "MVI_40742",
+  "corrida": "/Users/gricci/Desktop/PDI/roadguard/salidas/MVI_40742",
+  "fps": 25.0,
+  "region": "region_interes",
+  "posicion": null,
+  "perdidas": {
+    "fraccion_perdida": 0.0786,
+    "duracion_media_hueco_s": 0.931,
+    "n_huecos": 32
+  },
+  "identidad": {
+    "cambios_id": 4,
+    "segundos_vehiculo": 378.9,
+    "cambios_id_por_vehiculo_s": 0.01056
+  }
+}
