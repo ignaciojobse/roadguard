@@ -31,7 +31,13 @@ class _Racha:
 
 
 class DetectorZigzag:
-    """Detector RF8 streaming con un historial acotado por vehiculo."""
+    """Detector RF8 streaming con un historial acotado por vehiculo.
+
+    Los cruces confirmados se conservan hasta finalizar la sesión: su
+    pertinencia depende de ``t_cruce`` y no del reloj de confirmación, pues
+    las latencias de confirmación pueden ser distintas. Por vehículo solo se
+    conserva la racha vigente y los cruces dentro de la ventana.
+    """
 
     def __init__(self, umbrales: Optional[Umbrales] = None) -> None:
         self.umbrales = umbrales if umbrales is not None else Umbrales()
@@ -75,10 +81,6 @@ class DetectorZigzag:
                 raise ValueError("t_cruce no puede superar t_confirmacion")
 
         ventana = self.umbrales.zigzag_ventana
-        for ident, racha in list(self._rachas.items()):
-            if racha.cruces and t - racha.cruces[-1].t_cruce > ventana + _EPS:
-                del self._rachas[ident]
-
         eventos: list[Evento] = []
         for c in lista:
             racha = self._rachas.get(c.id_vehiculo)
@@ -96,6 +98,10 @@ class DetectorZigzag:
             if not racha.emitida and len(racha.cruces) >= self.umbrales.zigzag_cambios_min:
                 racha.emitida = True
                 eventos.append(self._evento(c.id_vehiculo, racha.cruces))
+            # Antes de emitir basta el máximo requerido; después solo hace
+            # falta el último cruce para detectar el fin/continuación de racha.
+            limite = 1 if racha.emitida else self.umbrales.zigzag_cambios_min
+            racha.cruces = racha.cruces[-limite:]
         self._ultimo_t = float(t)
         return eventos
 

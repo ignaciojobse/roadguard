@@ -1,0 +1,16 @@
+umbrales:
+  cercania_velocidad_min: 5.0
+  cercania_thw_max: 1.5
+  cercania_persistencia: 2.0
+  zigzag_cambios_min: 2
+  zigzag_ventana: 10.0
+  corte_ventana_post_cambio: 2.0
+  corte_thw_max: 1.5
+  corte_ttc_max: 3.0
+  aporte_cercania: 40
+  aporte_zigzag: 35
+  aporte_corte: 50
+  puntaje_maximo: 100
+  vigencia_aporte: 5.0
+  banda_verde_max: 29
+  banda_amarillo_max: 59

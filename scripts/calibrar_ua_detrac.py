@@ -1,8 +1,11 @@
-"""Genera los YAML calibrados de las secuencias UA-DETRAC de la demo (M3).
+"""Reproduce los YAML calibrados legacy de las secuencias UA-DETRAC (M3).
 
 Uso, desde la raiz del repo:
 
     python scripts/calibrar_ua_detrac.py
+
+Para calibrar nuevas camaras, usar scripts/calibrar_camara.py y su definicion
+YAML; este generador se conserva para reproducir las secuencias de la demo.
 
 Escribe `configs/<secuencia>.yaml` y, si estan los cuadros en
 `datos/ua-detrac/cuadros/<secuencia>/`, una imagen de verificacion en
@@ -22,6 +25,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import yaml
 
 RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ / "src"))
@@ -199,6 +203,16 @@ def sin_calibrar(nombre: str) -> dict:
 
 def escribir_yaml(nombre: str, datos: dict, r: ResultadoCalibracion | None) -> Path:
     s = SECUENCIAS[nombre]
+    perfil_existente = RAIZ / "configs" / f"{nombre}.yaml"
+    opciones_perfil: dict = {}
+    if perfil_existente.is_file():
+        cargado = yaml.safe_load(perfil_existente.read_text(encoding="utf-8")) or {}
+        if isinstance(cargado, dict):
+            opciones_perfil = {
+                clave: cargado[clave]
+                for clave in ("procesamiento_geometria",)
+                if clave in cargado
+            }
     plantilla = (RAIZ / "configs" / "camara_ejemplo.yaml").read_text(encoding="utf-8")
     cola = plantilla[plantilla.index("# Clases vehiculares") :]
 
@@ -210,6 +224,14 @@ def escribir_yaml(nombre: str, datos: dict, r: ResultadoCalibracion | None) -> P
         for c in datos["carriles"]
     )
     notas = "\n".join(f"#   {linea}" for linea in s["notas"])
+    procesamiento = ""
+    if "procesamiento_geometria" in opciones_perfil:
+        procesamiento = yaml.safe_dump(
+            opciones_perfil,
+            allow_unicode=True,
+            sort_keys=False,
+            default_flow_style=False,
+        ) + "\n"
     if r is None:
         calibracion = f"""# Sin calibracion (M3, RF4, Paso 5): no hay homografia. Region y carriles
 # son rayos desde el punto de fuga {s['fuga']} con pendientes {s['rayos']}."""
@@ -247,10 +269,11 @@ homografia:
 
 camara:
   nombre: {nombre}
+  resolucion_referencia: [{TAMANO[0]}, {TAMANO[1]}]
   descripcion: >-
     {s['descripcion']}
 
-{region}
+{procesamiento}{region}
 region_interes:
 {puntos(datos['region_interes'], '  ')}
 

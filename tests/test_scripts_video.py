@@ -59,6 +59,7 @@ def test_escalar_config_escala_pixeles_y_conserva_metros() -> None:
             "puntos_camino": [[0, 0], [0, 10], [30, 10], [30, 0]],
         },
         "clases": ["automovil"],
+        "camara": {"resolucion_referencia": [960, 540]},
     }
     escalada = perfilar_fps.escalar_config(datos, 720 / 540)
 
@@ -66,6 +67,7 @@ def test_escalar_config_escala_pixeles_y_conserva_metros() -> None:
     assert escalada["carriles"][0]["poligono"][1] == [1280.0, 0.0]
     assert escalada["homografia"]["puntos_imagen"][2] == [1280.0, 720.0]
     assert escalada["homografia"]["puntos_camino"] == datos["homografia"]["puntos_camino"]
+    assert escalada["camara"]["resolucion_referencia"] == [1280, 720]
     assert datos["region_interes"][2] == [960, 540], "no modifica el original"
     configuracion_desde_dict(escalada)  # sigue siendo una configuracion valida
 

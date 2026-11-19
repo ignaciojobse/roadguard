@@ -1,0 +1,27 @@
+camara:
+  nombre: MVI_39271
+  descripcion: >-
+    UA-DETRAC prueba, dia soleado, camara fija. Calzada cercana; el trafico
+    avanza de derecha a izquierda, acercandose a la camara.
+  resolucion_referencia: [960, 540]
+procesamiento_geometria:
+  compensar_camara: true
+  metodo_apoyo: longitudinal
+clases:
+  - automovil
+  - bus
+  - camion
+  - motocicleta
+calibracion:
+  # Mediciones reproducidas desde scripts/calibrar_ua_detrac.py, PRD de datos
+  # y evaluacion, seccion 7. Escala longitudinal y anchos de carril son
+  # candidatos basados en medidas externas; el RMSE no es precision global.
+  lineas:
+    - puntos_imagen: [[637, 338], [543, 361], [349, 410], [161, 455]]
+      posiciones: [0, 6, 15, 21]
+      lateral: 0
+    - puntos_imagen: [[560, 328], [463, 348], [255, 396], [69, 435]]
+      posiciones: [0, 6, 15, 21]
+      lateral: 3.5
+  bordes_carriles: [-3.3, 0, 3.5, 7, 13.2]
+  tramo_longitudinal: [-25, 25]

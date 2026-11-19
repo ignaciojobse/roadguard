@@ -104,6 +104,9 @@ class Configuracion:
     Contiene region de interes, limites de carril, correspondencias para
     rectificacion de perspectiva, clases vehiculares y umbrales
     (seccion 1.3).
+
+    ``confianza_min_carril`` es diagnostica: la centralidad del poligono no
+    es certeza del carril y no filtra los cambios usados por RF8/RF9.
     """
 
     region_interes: list[tuple[float, float]]
@@ -112,10 +115,28 @@ class Configuracion:
     clases: list[str]
     umbrales: Umbrales
     confianza_min_deteccion: float = 0.25
+    # Diagnostica; centralidad geometrica no es certeza y no filtra RF8/RF9.
     confianza_min_carril: float = 0.60
     # Paso 4: permanencia estable en el nuevo carril antes de confirmar un
     # cambio completo. Campo agregado; no forma parte de los umbrales RF7-RF11.
     permanencia_cambio_carril: float = 1.0   # s
+    camara: "PerfilCamara" = field(default_factory=lambda: PerfilCamara())
+    procesamiento_geometria: "ProcesamientoGeometria" = field(
+        default_factory=lambda: ProcesamientoGeometria()
+    )
+
+
+@dataclass(frozen=True)
+class PerfilCamara:
+    nombre: str = ""
+    descripcion: str = ""
+    resolucion_referencia: Optional[tuple[int, int]] = None
+
+
+@dataclass(frozen=True)
+class ProcesamientoGeometria:
+    compensar_camara: bool = False
+    metodo_apoyo: str = "centro_inferior"
 
 
 # ---------------------------------------------------------------------------
@@ -188,6 +209,10 @@ class EstadoCinematico:
     carril: Optional[int]
     confianza_carril: float
     calibrado: bool
+    # Pertenencia espacial asignada para el punto observado. `carril_estimado`
+    # conserva el ultimo valor conocido en fallas geometricas por compatibilidad;
+    # consumidores no deben tratarlo como asignacion valida de esa observacion.
+    carril_estimado: Optional[int] = None
 
 
 @dataclass(frozen=True)

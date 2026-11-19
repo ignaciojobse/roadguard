@@ -48,6 +48,7 @@ class DetectorVehiculos:
                 "RF2 requiere Ultralytics: pip install -r requirements.txt"
             ) from e
         self.cfg = cfg
+        self.region_interes = list(cfg.region_interes)
         self.modelo = YOLO(pesos)
         self.dispositivo = dispositivo
         self.tam_imagen = tam_imagen
@@ -55,7 +56,11 @@ class DetectorVehiculos:
         self._ids_coco = [i for i, c in MAPEO_COCO.items() if c in cfg.clases]
 
     def detectar(self, imagen: "object") -> list[Deteccion]:
-        """Devuelve detecciones con clase, caja y confianza (RF2)."""
+        """Devuelve detecciones crudas por clase/confianza; la ROI pertenece a M3.
+
+        No filtrar aquí es intencional: M3 aplica ROI al apoyo longitudinal
+        común usado por asignación y proyección.
+        """
         resultado = self.modelo.predict(
             imagen,
             conf=self.cfg.confianza_min_deteccion,
@@ -70,6 +75,8 @@ class DetectorVehiculos:
             cajas.conf.cpu().numpy(),
             cajas.cls.cpu().numpy(),
             self.cfg,
+            self.region_interes,
+            aplicar_roi=False,
         )
 
 
@@ -78,6 +85,9 @@ def detecciones_desde_arrays(
     confianzas: Sequence[float],
     clases_coco: Sequence[Any],
     cfg: Configuracion,
+    region_interes: Optional[list[tuple[float, float]]] = None,
+    *,
+    aplicar_roi: bool = True,
 ) -> list[Deteccion]:
     """Aplica mapeo de clases, clases configuradas, confianza minima y
     region de interes a la salida cruda del modelo (RF2)."""
@@ -90,8 +100,9 @@ def detecciones_desde_arrays(
             continue
         caja = Caja(float(x1), float(y1), float(x2), float(y2))
         detecciones.append(Deteccion(clase=clase, confianza=float(conf), caja=caja))
-    return filtrar_region_interes(detecciones, cfg.region_interes)
-
+    if not aplicar_roi:
+        return detecciones
+    return filtrar_region_interes(detecciones, cfg.region_interes if region_interes is None else region_interes)
 
 def filtrar_region_interes(
     detecciones: list[Deteccion], region: list[tuple[float, float]]

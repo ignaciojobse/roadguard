@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import math
 import os
-from dataclasses import fields
+import hashlib
+from dataclasses import fields, replace
 from typing import Any
 
 import yaml
 
 from roadguard.poligonos import area_poligono
-from roadguard.tipos import Carril, Configuracion, Homografia, Umbrales
+from roadguard.tipos import (Carril, Configuracion, Homografia, Umbrales,
+                             PerfilCamara, ProcesamientoGeometria, MetadatosVideo)
 
 # RF2: clases vehiculares que el sistema sabe detectar. El mapeo desde las
 # clases del modelo preentrenado esta en m2_deteccion/detector.py.
@@ -36,6 +38,7 @@ _CLAVES_RAIZ = {
     "confianza_min_carril",
     "permanencia_cambio_carril",
     "umbrales",
+    "procesamiento_geometria",
 }
 
 _UMBRALES_ENTEROS = {
@@ -87,6 +90,8 @@ def configuracion_desde_dict(datos: Any) -> Configuracion:
     homografia = _homografia(datos.get("homografia") or {})
     clases = _clases(datos["clases"])
     umbrales = _umbrales(datos.get("umbrales") or {})
+    camara = _perfil_camara(datos.get("camara"))
+    geometria = _procesamiento_geometria(datos.get("procesamiento_geometria"))
 
     conf_det = _numero(datos.get("confianza_min_deteccion", 0.25), "confianza_min_deteccion")
     conf_carril = _numero(datos.get("confianza_min_carril", 0.60), "confianza_min_carril")
@@ -109,7 +114,51 @@ def configuracion_desde_dict(datos: Any) -> Configuracion:
         confianza_min_deteccion=conf_det,
         confianza_min_carril=conf_carril,
         permanencia_cambio_carril=permanencia,
+        camara=camara,
+        procesamiento_geometria=geometria,
     )
+
+
+def _perfil_camara(valor: Any) -> PerfilCamara:
+    if valor is None:
+        return PerfilCamara()
+    if not isinstance(valor, dict) or set(valor) - {"nombre", "descripcion", "resolucion_referencia"}:
+        raise ErrorConfiguracion("'camara' debe contener solo nombre, descripcion y resolucion_referencia")
+    nombre, descripcion = valor.get("nombre", ""), valor.get("descripcion", "")
+    if not isinstance(nombre, str) or not isinstance(descripcion, str):
+        raise ErrorConfiguracion("'camara.nombre' y 'camara.descripcion' deben ser texto")
+    resolucion = valor.get("resolucion_referencia")
+    if resolucion is not None:
+        if (not isinstance(resolucion, list) or len(resolucion) != 2 or
+                any(isinstance(x, bool) or not isinstance(x, int) or x <= 0 for x in resolucion)):
+            raise ErrorConfiguracion("'camara.resolucion_referencia' debe ser [ancho, alto] entero positivo")
+        resolucion = tuple(resolucion)
+    return PerfilCamara(nombre, descripcion, resolucion)
+
+
+def _procesamiento_geometria(valor: Any) -> ProcesamientoGeometria:
+    if valor is None:
+        return ProcesamientoGeometria()
+    if not isinstance(valor, dict) or set(valor) - {"compensar_camara", "metodo_apoyo"}:
+        raise ErrorConfiguracion("'procesamiento_geometria' contiene claves invalidas")
+    compensar = valor.get("compensar_camara", False)
+    metodo = valor.get("metodo_apoyo", "centro_inferior")
+    if not isinstance(compensar, bool):
+        raise ErrorConfiguracion("'procesamiento_geometria.compensar_camara' debe ser booleano")
+    if not isinstance(metodo, str) or metodo not in {"centro_inferior", "longitudinal"}:
+        raise ErrorConfiguracion("'procesamiento_geometria.metodo_apoyo' invalido")
+    return ProcesamientoGeometria(compensar, metodo)
+
+
+def validar_perfil_video(cfg: Configuracion, metadatos: MetadatosVideo) -> list[str]:
+    """Comprueba la resolución declarada; no valida encuadre ni autoescala."""
+    ref = cfg.camara.resolucion_referencia
+    if ref and (metadatos.ancho, metadatos.alto) != ref:
+        raise ErrorConfiguracion(
+            f"Resolucion del video {metadatos.ancho}x{metadatos.alto} distinta "
+            f"de la referencia {ref[0]}x{ref[1]}"
+        )
+    return validar_consistencia(cfg)
 
 
 def validar_consistencia(cfg: Configuracion) -> list[str]:
@@ -132,11 +181,66 @@ def validar_consistencia(cfg: Configuracion) -> list[str]:
                 f"El carril {carril.indice} tiene area nula: no se asignaran "
                 "vehiculos a ese carril."
             )
+        if len(set(carril.poligono)) >= 3 and _autointersecta(carril.poligono):
+            raise ErrorConfiguracion(f"El poligono del carril {carril.indice} se autointersecta")
+    if len(set(cfg.region_interes)) >= 3 and _autointersecta(cfg.region_interes):
+        raise ErrorConfiguracion("El poligono region_interes se autointersecta")
+    advertencias.append("Sentido de circulacion y encuadre de los poligonos no verificados.")
     if len(cfg.carriles) < 2:
         advertencias.append(
             "Hay menos de dos carriles: zigzag y corte de carril no pueden activarse."
         )
     return advertencias
+
+
+def cargar_politica(ruta_yaml: str, cfg: Configuracion) -> tuple[Configuracion, str]:
+    """Carga umbrales explícitos reemplazando el conjunto completo."""
+    if not os.path.isfile(ruta_yaml):
+        raise ErrorConfiguracion(f"No existe el archivo de politica: {ruta_yaml}")
+    try:
+        with open(ruta_yaml, encoding="utf-8") as archivo:
+            datos = yaml.safe_load(archivo)
+    except yaml.YAMLError as error:
+        raise ErrorConfiguracion(f"YAML de politica invalido: {error}") from error
+    if not isinstance(datos, dict) or set(datos) != {"umbrales"}:
+        raise ErrorConfiguracion("La politica debe contener solamente la clave 'umbrales'")
+    efectiva = _umbrales(datos["umbrales"])
+    with open(ruta_yaml, "rb") as archivo:
+        sha = hashlib.sha256(archivo.read()).hexdigest()
+    # La política es completa: claves omitidas reciben los defaults de Umbrales.
+    return replace(cfg, umbrales=efectiva), sha
+
+
+def _autointersecta(puntos: list[tuple[float, float]]) -> bool:
+    """Detecta cruces entre lados no adyacentes, sin imponer límites de imagen."""
+    def orient(a, b, c):
+        return (b[0]-a[0]) * (c[1]-a[1]) - (b[1]-a[1]) * (c[0]-a[0])
+
+    def cruza(a, b, c, d):
+        o1, o2, o3, o4 = orient(a, b, c), orient(a, b, d), orient(c, d, a), orient(c, d, b)
+        if o1 * o2 < 0 and o3 * o4 < 0:
+            return True
+
+        def sobre_segmento(p, q, r):
+            return (min(p[0], q[0]) <= r[0] <= max(p[0], q[0]) and
+                    min(p[1], q[1]) <= r[1] <= max(p[1], q[1]))
+
+        return (
+            (o1 == 0 and sobre_segmento(a, b, c))
+            or (o2 == 0 and sobre_segmento(a, b, d))
+            or (o3 == 0 and sobre_segmento(c, d, a))
+            or (o4 == 0 and sobre_segmento(c, d, b))
+        )
+
+    n = len(puntos)
+    for i in range(n):
+        a, b = puntos[i], puntos[(i + 1) % n]
+        for j in range(i + 1, n):
+            if j == i or j == (i + 1) % n or (j + 1) % n == i:
+                continue
+            if cruza(a, b, puntos[j], puntos[(j + 1) % n]):
+                return True
+    return False
 
 
 # ---------------------------------------------------------------------------
