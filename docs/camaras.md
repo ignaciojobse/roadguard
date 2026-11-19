@@ -108,4 +108,13 @@ opciones geometricas del perfil existente; no es el flujo para calibrar nuevas
 camaras. La herramienta generica es el flujo para nuevas definiciones.
 MVI_39271 se proceso con video real y apoyo longitudinal (1570 cuadros, 3 RF7,
 0 RF8 y 2 RF9); esto no valida globalmente la calibracion ni su precision.
-La segunda vista solo cuenta con pruebas sinteticas.
+MVI_40714 tambien se proceso de forma exploratoria con su perfil propio (1180
+cuadros, apoyo centro inferior, sin compensacion y sin alertas). Tiene
+oclusiones y cajas recortadas; este resultado no valida la precision de esa
+vista ni demuestra ausencia de riesgo. Las pruebas de equivalencia entre
+vistas siguen siendo sinteticas.
+
+Las etiquetas sobre las cajas usan texto ASCII (`ID 27 auto | C1`, con riesgo
+positivo `| riesgo 40`); `C-` indica que el carril no esta disponible. OpenCV
+Hershey no representa de forma fiable middot, raya larga ni caracteres
+acentuados, por eso se usan `|` y `-`.

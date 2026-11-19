@@ -35,30 +35,20 @@ def etiqueta_vehiculo(
 ) -> str:
     """Texto sobre la caja: ID, clase, carril y riesgo.
 
-    Sin estado de M3 o sin una asignacion geometrica valida no se informa
-    carril. Sin eventos confirmados no se afirma seguridad. El texto va sin
-    tildes porque OpenCV no las dibuja.
+    Hershey de OpenCV solo cubre ASCII de forma fiable, por eso el rotulo usa
+    separadores ASCII y `C-` cuando el carril no esta disponible.
     """
-    partes = [f"ID {track.id_vehiculo}", track.clase]
-    if estado is not None:
-        if estado.carril is not None:
-            partes.append(f"carril {estado.carril}")
-        else:
-            partes.append("sin carril")
-    if puntaje is not None:
-        geometria_no_evaluable = estado is not None and (
-            estado.carril is None or not estado.calibrado or estado.velocidad is None
-        )
-        if puntaje.puntaje == 0:
-            partes.append("sin eventos")
-        elif estado is None:
-            partes.append(f"riesgo {puntaje.puntaje} {puntaje.nivel.value}")
-        else:
-            etiqueta = f"puntaje {puntaje.puntaje} {puntaje.nivel.value}"
-            if geometria_no_evaluable:
-                etiqueta += " reciente"
-            partes.append(etiqueta)
-    return " ".join(partes)
+    clases = {
+        "automovil": "auto",
+        "motocicleta": "moto",
+        "camion": "camion",
+    }
+    clase = clases.get(track.clase, track.clase)
+    carril = f"C{estado.carril}" if estado is not None and estado.carril is not None else "C-"
+    partes = [f"ID {track.id_vehiculo} {clase}", carril]
+    if puntaje is not None and puntaje.puntaje > 0:
+        partes.append(f"riesgo {puntaje.puntaje}")
+    return " | ".join(partes)
 
 
 def color_por_nivel(puntaje: Optional[PuntajeRiesgo]) -> tuple[int, int, int]:

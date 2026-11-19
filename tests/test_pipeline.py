@@ -529,7 +529,7 @@ def test_cam_fallo_y_recuperacion_actualiza_movimiento_y_puntos(tmp_path, monkey
     from roadguard.m5_salidas.dibujo import etiqueta_vehiculo
     assert etiqueta_vehiculo(
         Track(1, 2, 2 / FPS, "automovil", 0.9, Caja(60, 14, 101, 45), (80, 45)), failed
-    ).endswith("sin carril")
+    ) == "ID 1 auto | C-"
     with open(resultado.ruta_tracks, newline="", encoding="utf-8") as f:
         filas = list(csv.DictReader(f))
     assert filas and all(float(f["x1"]) >= 0 for f in filas)

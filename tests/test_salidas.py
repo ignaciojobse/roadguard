@@ -42,9 +42,18 @@ def _negro() -> np.ndarray:
 
 
 def test_etiqueta_con_y_sin_estado() -> None:
-    assert etiqueta_vehiculo(_track()) == "ID 7 automovil"
-    assert etiqueta_vehiculo(_track(), _estado(carril=1)) == "ID 7 automovil carril 1"
-    assert etiqueta_vehiculo(_track(), _estado(carril=None)) == "ID 7 automovil sin carril"
+    assert etiqueta_vehiculo(_track()) == "ID 7 auto | C-"
+    assert etiqueta_vehiculo(_track(), _estado(carril=1)) == "ID 7 auto | C1"
+    assert etiqueta_vehiculo(_track(), _estado(carril=None)) == "ID 7 auto | C-"
+
+
+@pytest.mark.parametrize(
+    "clase,esperada",
+    [("automovil", "auto"), ("motocicleta", "moto"), ("bus", "bus"),
+     ("camion", "camion"), ("vehiculo raro", "vehiculo raro")],
+)
+def test_etiqueta_abrevia_clases_conocidas(clase, esperada) -> None:
+    assert etiqueta_vehiculo(_track(clase=clase), _estado()) == f"ID 7 {esperada} | C1"
 
 
 @pytest.mark.parametrize(
@@ -55,9 +64,11 @@ def test_etiqueta_con_y_sin_estado() -> None:
         EstadoCinematico(7, 0, 0.0, None, None, None, 1, 1.0, True),
     ],
 )
-def test_puntaje_cero_con_geometria_no_evaluable_es_verde_sin_eventos(estado, monkeypatch) -> None:
+def test_puntaje_cero_con_geometria_no_evaluable_no_agrega_texto(estado, monkeypatch) -> None:
     puntaje = PuntajeRiesgo(7, 0.0, 0, NivelRiesgo.VERDE)
-    assert "sin eventos" in etiqueta_vehiculo(_track(), estado, puntaje)
+    assert etiqueta_vehiculo(_track(), estado, puntaje) == (
+        f"ID 7 auto | {'C1' if estado.carril is not None else 'C-'}"
+    )
     colores = []
     monkeypatch.setattr("roadguard.m5_salidas.dibujo.cv2.rectangle",
                         lambda *args, **kwargs: colores.append(args[3]))
@@ -67,7 +78,7 @@ def test_puntaje_cero_con_geometria_no_evaluable_es_verde_sin_eventos(estado, mo
 
 def test_carril_cacheado_no_se_muestra_como_valido() -> None:
     estado = EstadoCinematico(7, 0, 0.0, None, None, None, None, 0.2, False, 1)
-    assert etiqueta_vehiculo(_track(), estado).endswith("sin carril")
+    assert etiqueta_vehiculo(_track(), estado) == "ID 7 auto | C-"
 
 
 def test_leyenda_visible_estable_con_puntajes_vacios_y_no_tapa_advertencia(monkeypatch) -> None:
@@ -105,23 +116,34 @@ def test_puntaje_evaluable_muestra_puntaje_y_banda() -> None:
     cero = PuntajeRiesgo(7, 0.0, 0, NivelRiesgo.VERDE)
     positivo = PuntajeRiesgo(7, 0.0, 40, NivelRiesgo.AMARILLO)
     evaluable = EstadoCinematico(7, 0, 0.0, 1.0, 2.0, 5.0, 1, 1.0, True)
-    assert etiqueta_vehiculo(_track(), evaluable, cero).endswith("sin eventos")
-    assert etiqueta_vehiculo(_track(), evaluable, positivo).endswith("puntaje 40 amarillo")
+    assert etiqueta_vehiculo(_track(), evaluable, cero) == "ID 7 auto | C1"
+    assert etiqueta_vehiculo(_track(), evaluable, positivo) == "ID 7 auto | C1 | riesgo 40"
+    assert etiqueta_vehiculo(_track(), None, positivo) == "ID 7 auto | C- | riesgo 40"
 
 
 def test_puntaje_positivo_reciente_conserva_banda() -> None:
     estado = _estado(carril=None)
     puntaje = PuntajeRiesgo(7, 0.0, 40, NivelRiesgo.AMARILLO)
     texto = etiqueta_vehiculo(_track(), estado, puntaje)
-    assert texto.endswith("puntaje 40 amarillo reciente")
+    assert texto == "ID 7 auto | C- | riesgo 40"
     anotado = anotar_cuadro(_negro(), [_track()], [estado], puntajes={7: puntaje})
     assert (anotado[145, 100] == (0, 220, 255)).all()
+    assert "amarillo" not in texto and "reciente" not in texto
+
+
+def test_etiqueta_no_altera_color_de_caja_por_banda() -> None:
+    estado = _estado(carril=None)
+    reciente = PuntajeRiesgo(7, 0.0, 40, NivelRiesgo.AMARILLO)
+    sin_puntaje = anotar_cuadro(_negro(), [_track()], [estado])
+    con_puntaje = anotar_cuadro(_negro(), [_track()], [estado], puntajes={7: reciente})
+    assert (sin_puntaje[145, 100] == COLOR_CAJA).all()
+    assert (con_puntaje[145, 100] == (0, 220, 255)).all()
 
 
 def test_estado_sin_puntaje_conserva_etiqueta_legacy() -> None:
     assert etiqueta_vehiculo(_track(), EstadoCinematico(
         7, 0, 0.0, None, None, None, None, 1.0, False
-    )) == "ID 7 automovil sin carril"
+    )) == "ID 7 auto | C-"
 
 
 def test_rotulo_con_caja_negativa_queda_en_imagen(monkeypatch) -> None:
@@ -150,11 +172,18 @@ def test_anotar_no_modifica_el_original_y_dibuja_la_caja() -> None:
     assert not anotado[230, 300].any()
 
 
-def test_estado_se_asocia_por_id() -> None:
-    otro = anotar_cuadro(_negro(), [_track(id_v=7)], [_estado(id_v=8, carril=3)])
-    propio = anotar_cuadro(_negro(), [_track(id_v=7)], [_estado(id_v=7, carril=3)])
-    # Con el estado de otro vehiculo la etiqueta es mas corta (sin carril).
-    assert propio.sum() > otro.sum()
+def test_estado_se_asocia_por_id(monkeypatch) -> None:
+    import roadguard.m5_salidas.dibujo as dibujo
+
+    textos = []
+    original = dibujo.cv2.putText
+    monkeypatch.setattr(dibujo.cv2, "putText", lambda imagen, texto, *args, **kwargs: (
+        textos.append(texto), original(imagen, texto, *args, **kwargs)
+    )[1])
+    dibujo.anotar_cuadro(
+        _negro(), [_track(id_v=7)], [_estado(id_v=8, carril=3)]
+    )
+    assert "ID 7 auto | C-" in textos
 
 
 def test_caja_fuera_del_cuadro_no_falla() -> None:
